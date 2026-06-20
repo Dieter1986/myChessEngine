@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chessturion — Play vs Bot</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0d1117;color:#c9d1d9;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+h1{font-size:1.6rem;letter-spacing:6px;color:#c9a84c;padding:18px 0 4px;text-transform:uppercase;}
+.subtitle{color:#6e7681;font-size:0.8rem;letter-spacing:2px;margin-bottom:12px;}
+#game-area{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;justify-content:center;padding:0 12px 24px;}
+#board-wrap{position:relative;}
+#board-canvas{display:block;border-radius:8px;cursor:pointer;}
+#status-bar{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px 18px;margin-bottom:10px;font-size:0.9rem;min-height:38px;text-align:center;width:100%;max-width:580px;}
+#status-bar.check{color:#f85149;}
+#status-bar.good{color:#3fb950;}
+#status-bar.info{color:#79c0ff;}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px;width:210px;font-size:0.83rem;}
+.panel h3{color:#c9a84c;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;border-bottom:1px solid #30363d;padding-bottom:6px;}
+#move-log{height:340px;overflow-y:auto;font-family:monospace;font-size:0.78rem;line-height:1.7;}
+#move-log div{padding:1px 4px;border-radius:3px;}
+#move-log div:nth-child(odd){background:rgba(255,255,255,0.03);}
+.special-log{color:#c9a84c;}
+.btn{display:block;width:100%;background:#21262d;border:1px solid #30363d;color:#c9d1d9;border-radius:6px;padding:8px;font-size:0.82rem;cursor:pointer;margin-top:8px;transition:background 0.15s;}
+.btn:hover{background:#30363d;}
+.btn.danger{color:#f85149;border-color:#f85149;}
+.stat-row{display:flex;justify-content:space-between;margin:3px 0;font-size:0.8rem;}
+.stat-row span{color:#8b949e;}
+.stat-row b{color:#c9d1d9;}
+#promo-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99;align-items:center;justify-content:center;}
+#promo-modal.show{display:flex;}
+#promo-box{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:24px;text-align:center;}
+#promo-box h3{color:#c9a84c;margin-bottom:16px;}
+.promo-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.promo-btn{background:#21262d;border:1px solid #30363d;color:#c9d1d9;border-radius:6px;padding:10px 14px;font-size:0.9rem;cursor:pointer;}
+.promo-btn:hover{background:#30363d;border-color:#c9a84c;}
+#fire-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99;align-items:center;justify-content:center;}
+#fire-modal.show{display:flex;}
+#fire-box{background:#161b22;border:2px solid #f85149;border-radius:12px;padding:24px;max-width:420px;text-align:center;}
+#fire-box h3{color:#f85149;margin-bottom:10px;}
+#fire-box p{color:#8b949e;font-size:0.85rem;margin-bottom:14px;}
+#fire-pieces{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0;}
+.fire-piece-btn{background:#21262d;border:1px solid #30363d;color:#c9d1d9;border-radius:6px;padding:8px 12px;cursor:pointer;font-size:0.85rem;}
+.fire-piece-btn.selected{background:#3d1f1f;border-color:#f85149;}
+#fire-total{color:#f85149;font-size:0.9rem;margin:8px 0;}
+#fire-confirm{background:#f85149;color:#fff;border:none;border-radius:6px;padding:10px 24px;font-size:0.9rem;cursor:pointer;margin-top:8px;}
+#fire-cancel{background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;padding:8px 16px;font-size:0.85rem;cursor:pointer;margin-top:6px;}
+</style>
+</head>
+<body>
+<h1>Chessturion</h1>
+<p class="subtitle">You play White · Bot plays Black (~650 ELO)</p>
+<div id="status-bar" class="info">Your turn — click a piece to select it</div>
+<div id="game-area">
+<div id="board-wrap">
+  <canvas id="board-canvas"></canvas>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;">
+  <div class="panel">
+    <h3>Status</h3>
+    <div class="stat-row"><span>Round</span><b id="stat-round">1</b></div>
+    <div class="stat-row"><span>White Phoenix</span><b id="stat-wp">3 lives · round 0</b></div>
+    <div class="stat-row"><span>Black Phoenix</span><b id="stat-bp">3 lives · round 0</b></div>
+    <div class="stat-row"><span>White Spectre</span><b id="stat-ws">on board</b></div>
+    <div class="stat-row"><span>Black Spectre</span><b id="stat-bs">on board</b></div>
+    <button class="btn" id="btn-fire" style="display:none;background:#3d1f1f;border-color:#f85149;color:#f85149;">Declare Fire Tribunal</button>
+    <button class="btn" id="btn-spectre">Return Spectre (phase shift)</button>
+    <button class="btn danger" id="btn-new">New Game</button>
+  </div>
+  <div class="panel">
+    <h3>Move Log</h3>
+    <div id="move-log"></div>
+  </div>
+</div>
+</div>
+
+<div id="promo-modal">
+<div id="promo-box">
+  <h3>Grand Promotion</h3>
+  <p style="color:#8b949e;font-size:0.85rem;margin-bottom:8px;">Choose a piece from the full Chessturion roster</p>
+  <div class="promo-btns" id="promo-btns"></div>
+</div>
+</div>
+
+<div id="fire-modal">
+<div id="fire-box">
+  <h3>🔥 Fire Tribunal</h3>
+  <p>Select your own pieces to sacrifice totalling <strong style="color:#f85149;">at least 7 points</strong>.<br>The enemy Phoenix is permanently removed.</p>
+  <div id="fire-pieces"></div>
+  <div id="fire-total">Selected: 0 pts</div>
+  <button id="fire-confirm" disabled>Execute Tribunal</button><br>
+  <button id="fire-cancel">Cancel</button>
+</div>
+</div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════
+//  CONSTANTS & HELPERS
+// ═══════════════════════════════════════════════════════
+const N=10, SQ=52;
+const FILES='ABCDEFGHIJ';
+const W='white', B='black';
+const opp=c=>c===W?B:W;
+
+// piece symbols: uppercase=white, lowercase=black
+// T=Rook P=Knight C=Crusader L=Bishop D=Queen K=King S=Spectre F=Phoenix p/P=Pawn
+const PIECE_VALUE={K:999,D:9,T:5,L:3,P:3,C:7,S:4,F:6,p:1};
+const PNAMES={K:'King',D:'Queen',T:'Rook',L:'Bishop',P:'Knight',C:'Crusader',S:'Spectre',F:'Phoenix',p:'Pawn'};
+
+function sym(piece){return piece?piece.type+(piece.color===W?piece.type.toUpperCase():piece.type.toLowerCase()):'.';}
+function isWhitePiece(p){return p&&p.color===W;}
+function coord(r,c){return FILES[c]+(10-r);}
+
+// Square colours
+function sqBaseColor(r,c){
+  if((r===1||r===8)&&c===2)return'#1a3a55';
+  if((r===1||r===8)&&c===7)return'#4a2200';
+  return(r+c)%2===0?'#d4bc8c':'#7a6248';
+}
+
+// ═══════════════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════════════
+let G; // game state object
+
+function makeBoard(){
+  // Returns 10×10 array of {type,color,moved?} or null
+  const b=Array.from({length:10},()=>Array(10).fill(null));
+  const backRank=['T','P','C','L','D','K','L','C','P','T'];
+  // Black back rank row 0
+  for(let c=0;c<10;c++) b[0][c]={type:backRank[c],color:B,moved:false};
+  // Black spectre row 1, col 2; Phoenix row 1, col 7
+  b[1][2]={type:'S',color:B,moved:false};
+  b[1][7]={type:'F',color:B,moved:false};
+  // Black pawns row 2
+  for(let c=0;c<10;c++) b[2][c]={type:'p',color:B,moved:false};
+  // White pawns row 7
+  for(let c=0;c<10;c++) b[7][c]={type:'p',color:W,moved:false};
+  // White spectre row 8, col 2; Phoenix row 8, col 7
+  b[8][2]={type:'S',color:W,moved:false};
+  b[8][7]={type:'F',color:W,moved:false};
+  // White back rank row 9
+  for(let c=0;c<10;c++) b[9][c]={type:backRank[c],color:W,moved:false};
+  return b;
+}
+
+function newGame(){
+  G={
+    board: makeBoard(),
+    turn: W,
+    round: 1,
+    // en passant: {r,c} of capturable pawn or null
+    ep: null,
+    // Spectre state per colour
+    spectre:{
+      [W]:{offBoard:false,turnsLeft:0},
+      [B]:{offBoard:false,turnsLeft:0},
+    },
+    // Phoenix state per colour
+    phoenix:{
+      [W]:{lives:3,solarRound:0,permanent:false}, // solarRound = round when countdown started
+      [B]:{lives:3,solarRound:0,permanent:false},
+    },
+    // Vanguard pawns: set of "r,c" strings
+    vanguard: new Set(),
+    // castling rights
+    castling:{
+      [W]:{kside:true,qside:true},
+      [B]:{kside:true,qside:true},
+    },
+    selected:null,  // {r,c}
+    legalMoves:[],  // [{r,c,special?}]
+    gameOver:false,
+    winner:null,
+    waitingPromo:null, // {r,c,color,callback}
+    halfMove:0,
+    moveHistory:[],
+  };
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════
+//  MOVE GENERATION
+// ═══════════════════════════════════════════════════════
+
+function inBounds(r,c){return r>=0&&r<N&&c>=0&&c<N;}
+function pieceAt(board,r,c){return inBounds(r,c)?board[r][c]:null;}
+
+// Returns list of {r,c,special?} pseudo-legal moves for piece at (r,c)
+function pseudoMoves(board,r,c,ep,spectre,castling,vanguard){
+  const p=board[r][c];
+  if(!p) return[];
+  const {type,color}=p;
+  const enemy=opp(color);
+  const moves=[];
+
+  const add=(tr,tc,special)=>{
+    if(!inBounds(tr,tc)) return;
+    moves.push({r:tr,c:tc,special});
+  };
+  const addSlide=(dr,dc)=>{
+    let tr=r+dr,tc=c+dc;
+    while(inBounds(tr,tc)){
+      const t=board[tr][tc];
+      if(!t){moves.push({r:tr,c:tc});}
+      else{if(t.color===enemy)moves.push({r:tr,c:tc});break;}
+      tr+=dr;tc+=dc;
+    }
+  };
+  const canMove=(tr,tc)=>{
+    if(!inBounds(tr,tc))return false;
+    const t=board[tr][tc];
+    return!t||t.color===enemy;
+  };
+
+  if(type==='p'){
+    const dir=color===W?-1:1; // white moves up (decreasing row), black moves down
+    const startRow=color===W?7:2;
+    const isVanguard=vanguard.has(`${r},${c}`);
+    // forward
+    if(inBounds(r+dir,c)&&!board[r+dir][c]){
+      moves.push({r:r+dir,c});
+      // double push from start
+      if(r===startRow&&!board[r+2*dir][c])moves.push({r:r+2*dir,c,special:'ep-able'});
+    }
+    // captures (diagonal forward)
+    for(const dc of[-1,1]){
+      const tr=r+dir,tc=c+dc;
+      if(inBounds(tr,tc)){
+        const t=board[tr][tc];
+        if(t&&t.color===enemy)moves.push({r:tr,c:tc});
+        // en passant
+        if(ep&&tr===ep.r&&tc===ep.c)moves.push({r:tr,c:tc,special:'ep'});
+      }
+    }
+    // vanguard: backward moves
+    if(isVanguard){
+      const bdir=-dir;
+      if(inBounds(r+bdir,c)&&!board[r+bdir][c])moves.push({r:r+bdir,c});
+      for(const dc of[-1,1]){
+        const tr=r+bdir,tc=c+dc;
+        if(inBounds(tr,tc)){const t=board[tr][tc];if(t&&t.color===enemy)moves.push({r:tr,c:tc});}
+      }
+    }
+  }
+
+  if(type==='T'){
+    for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]])addSlide(dr,dc);
+  }
+  if(type==='L'){
+    for(const[dr,dc]of[[1,1],[1,-1],[-1,1],[-1,-1]])addSlide(dr,dc);
+  }
+  if(type==='D'){
+    for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]])addSlide(dr,dc);
+  }
+  if(type==='P'){
+    for(const[dr,dc]of[[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]]){
+      if(canMove(r+dr,c+dc))moves.push({r:r+dr,c:c+dc});
+    }
+  }
+  if(type==='K'){
+    for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){
+      if(canMove(r+dr,c+dc))moves.push({r:r+dr,c:c+dc});
+    }
+    // castling
+    if(!p.moved&&castling[color]){
+      const row=color===W?9:0;
+      if(castling[color].kside){
+        // king at col 5, rook at col 9; king moves to col 7
+        if(!board[row][6]&&!board[row][7]&&!board[row][8]&&board[row][9]&&board[row][9].type==='T'&&!board[row][9].moved)
+          moves.push({r:row,c:7,special:'castle-k'});
+      }
+      if(castling[color].qside){
+        // king at col 5, rook at col 0; king moves to col 3
+        if(!board[row][4]&&!board[row][3]&&!board[row][2]&&!board[row][1]&&board[row][0]&&board[row][0].type==='T'&&!board[row][0].moved)
+          moves.push({r:row,c:3,special:'castle-q'});
+      }
+    }
+  }
+  if(type==='C'){
+    // Knight moves
+    for(const[dr,dc]of[[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]]){
+      if(canMove(r+dr,c+dc))moves.push({r:r+dr,c:c+dc});
+    }
+    // Bishop moves (sliding diagonal)
+    for(const[dr,dc]of[[1,1],[1,-1],[-1,1],[-1,-1]])addSlide(dr,dc);
+  }
+  if(type==='F'){
+    // Moves like King (1 square any direction)
+    for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){
+      if(canMove(r+dr,c+dc))moves.push({r:r+dr,c:c+dc});
+    }
+  }
+  if(type==='S'){
+    // 1 or 2 squares any direction, no jump, no blocked path
+    for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){
+      const tr1=r+dr,tc1=c+dc;
+      if(!inBounds(tr1,tc1))continue;
+      const t1=board[tr1][tc1];
+      if(!t1){
+        moves.push({r:tr1,c:tc1});
+        // 2-step
+        const tr2=r+2*dr,tc2=c+2*dc;
+        if(inBounds(tr2,tc2)){
+          const t2=board[tr2][tc2];
+          if(!t2)moves.push({r:tr2,c:tc2});
+          else if(t2.color===enemy){
+            // Shadow Infiltration: land beyond captured piece
+            const tr3=r+3*dr,tc3=c+3*dc;
+            if(inBounds(tr3,tc3)&&!board[tr3][tc3])
+              moves.push({r:tr2,c:tc2,special:'shadow',land:{r:tr3,c:tc3}});
+          }
+        }
+      } else if(t1.color===enemy){
+        // 1-step capture → land beyond
+        const tr2=r+2*dr,tc2=c+2*dc;
+        if(inBounds(tr2,tc2)&&!board[tr2][tc2])
+          moves.push({r:tr1,c:tc1,special:'shadow',land:{r:tr2,c:tc2}});
+      }
+    }
+  }
+
+  return moves;
+}
+
+function findKing(board,color){
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const p=board[r][c];
+    if(p&&p.type==='K'&&p.color===color)return{r,c};
+  }
+  return null;
+}
+
+function isAttacked(board,r,c,byColor,ep,spectre,castling,vanguard){
+  // Check if square (r,c) is attacked by byColor
+  for(let pr=0;pr<N;pr++)for(let pc=0;pc<N;pc++){
+    const p=board[pr][pc];
+    if(!p||p.color!==byColor)continue;
+    const mvs=pseudoMoves(board,pr,pc,ep,spectre,castling,vanguard);
+    for(const m of mvs){
+      const tr=m.special==='shadow'?m.land.r:m.r;
+      const tc=m.special==='shadow'?m.land.c:m.c;
+      if(tr===r&&tc===c)return true;
+    }
+  }
+  return false;
+}
+
+function inCheck(board,color,ep,spectre,castling,vanguard){
+  const k=findKing(board,color);
+  if(!k)return false;
+  return isAttacked(board,k.r,k.c,opp(color),ep,spectre,castling,vanguard);
+}
+
+// Apply a move on a copy of the board, return {board,ep,castling}
+function applyMoveToBoard(board,from,to,special,ep,castling,vanguard){
+  const nb=board.map(row=>row.map(p=>p?{...p}:null));
+  const p={...nb[from.r][from.c]};
+  p.moved=true;
+
+  if(special==='ep'){
+    // remove captured pawn
+    const capRow=from.r;
+    nb[capRow][to.c]=null;
+  }
+  if(special==='shadow'){
+    // capture piece at to (intermediate), land at to.land
+    nb[from.r][from.c]=null;
+    nb[to.r][to.c]=null; // remove captured
+    nb[to.land.r][to.land.c]=p;
+    return{board:nb,ep:null,castling};
+  }
+  if(special==='castle-k'){
+    const row=from.r;
+    nb[row][5]=null;nb[row][9]=null;
+    nb[row][7]={...p};
+    nb[row][6]={type:'T',color:p.color,moved:true};
+    return{board:nb,ep:null,castling:{...castling,[p.color]:{kside:false,qside:false}}};
+  }
+  if(special==='castle-q'){
+    const row=from.r;
+    nb[row][5]=null;nb[row][0]=null;
+    nb[row][3]={...p};
+    nb[row][4]={type:'T',color:p.color,moved:true};
+    return{board:nb,ep:null,castling:{...castling,[p.color]:{kside:false,qside:false}}};
+  }
+
+  nb[from.r][from.c]=null;
+  nb[to.r][to.c]=p;
+
+  let newEp=null;
+  if(special==='ep-able') newEp={r:(from.r+to.r)/2,c:from.c};
+
+  // Update castling rights if king or rook moved
+  let newCastling=castling;
+  if(p.type==='K'){
+    newCastling={...castling,[p.color]:{kside:false,qside:false}};
+  } else if(p.type==='T'){
+    const row=p.color===W?9:0;
+    if(from.r===row&&from.c===0) newCastling={...castling,[p.color]:{...castling[p.color],qside:false}};
+    if(from.r===row&&from.c===9) newCastling={...castling,[p.color]:{...castling[p.color],kside:false}};
+  }
+
+  return{board:nb,ep:newEp,castling:newCastling};
+}
+
+// Legal moves (filtered for check)
+function legalMoves(board,color,ep,spectre,castling,vanguard){
+  const moves=[];
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const p=board[r][c];
+    if(!p||p.color!==color)continue;
+    const pm=pseudoMoves(board,r,c,ep,spectre,castling,vanguard);
+    for(const m of pm){
+      const to=m.special==='shadow'?{r:m.land.r,c:m.land.c}:{r:m.r,c:m.c};
+      const {board:nb}=applyMoveToBoard(board,{r,c},{r:m.r,c:m.c},m.special,ep,castling,vanguard);
+      if(!inCheck(nb,color,null,spectre,castling,vanguard)){
+        moves.push({from:{r,c},to,raw:m});
+      }
+    }
+    // Also validate castling (king must not pass through check)
+    // (already filtered above since king ends up on to square)
+  }
+  return moves;
+}
+
+// ═══════════════════════════════════════════════════════
+//  BOARD RENDERING
+// ═══════════════════════════════════════════════════════
+const canvas=document.getElementById('board-canvas');
+const ctx=canvas.getContext('2d');
+const CW=N*SQ, CH=N*SQ;
+canvas.width=CW;canvas.height=CH;
+
+// Piece Unicode symbols
+const PIECE_GLYPHS={
+  [W]:{K:'♔',D:'♕',T:'♖',L:'♗',P:'♘',C:'⚔',S:'👁',F:'🔥',p:'♙'},
+  [B]:{K:'♚',D:'♛',T:'♜',L:'♝',P:'♞',C:'⚔',S:'👁',F:'🔥',p:'♟'},
+};
+
+function drawBoard(){
+  const{board,selected,legalMoves:lm,ep,spectre,vanguard}=G;
+
+  // squares
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    let col=sqBaseColor(r,c);
+    ctx.fillStyle=col;
+    ctx.fillRect(c*SQ,r*SQ,SQ,SQ);
+  }
+
+  // highlights: selected
+  if(selected){
+    ctx.fillStyle='rgba(100,180,255,0.35)';
+    ctx.fillRect(selected.c*SQ,selected.r*SQ,SQ,SQ);
+  }
+  // legal move dots / highlights
+  for(const m of(lm||[])){
+    const{r,c}=m;
+    const target=board[r][c];
+    if(target){
+      // capture highlight
+      ctx.fillStyle='rgba(248,81,73,0.35)';
+      ctx.fillRect(c*SQ,r*SQ,SQ,SQ);
+    } else {
+      // move dot
+      ctx.beginPath();
+      ctx.arc(c*SQ+SQ/2,r*SQ+SQ/2,SQ*0.18,0,Math.PI*2);
+      ctx.fillStyle='rgba(100,180,255,0.5)';
+      ctx.fill();
+    }
+  }
+
+  // rank/file labels
+  ctx.font=`bold ${SQ*0.18}px monospace`;
+  ctx.textAlign='left';ctx.textBaseline='top';
+  for(let r=0;r<N;r++){
+    ctx.fillStyle='rgba(0,0,0,0.5)';
+    ctx.fillText(10-r,2,r*SQ+2);
+  }
+  ctx.textAlign='right';ctx.textBaseline='bottom';
+  for(let c=0;c<N;c++){
+    ctx.fillStyle='rgba(0,0,0,0.5)';
+    ctx.fillText(FILES[c],c*SQ+SQ-2,(c+1)%2===0?CH:CH); // bottom
+    ctx.fillText(FILES[c],(c+1)*SQ-2,CH-1);
+  }
+
+  // pieces
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const p=board[r][c];
+    if(!p)continue;
+    const glyph=PIECE_GLYPHS[p.color][p.type]||'?';
+    // shadow
+    ctx.font=`${SQ*0.62}px serif`;
+    ctx.fillStyle='rgba(0,0,0,0.4)';
+    ctx.fillText(glyph,c*SQ+SQ/2+2,r*SQ+SQ/2+2);
+    // piece
+    ctx.fillStyle=p.color===W?'#f8f0e0':'#1a0e06';
+    ctx.fillText(glyph,c*SQ+SQ/2,r*SQ+SQ/2);
+    // vanguard marker
+    if(p.type==='p'&&vanguard.has(`${r},${c}`)){
+      ctx.font=`${SQ*0.2}px sans-serif`;
+      ctx.fillStyle='#3fb950';
+      ctx.fillText('V',c*SQ+SQ-8,r*SQ+8);
+    }
+  }
+
+  // spectre off-board indicator
+  for(const col of[W,B]){
+    const s=G.spectre[col];
+    if(s.offBoard){
+      const x=col===W?CW-SQ*0.5:SQ*0.5;
+      ctx.font=`${SQ*0.45}px serif`;
+      ctx.fillStyle='rgba(120,180,255,0.6)';
+      ctx.fillText('👁',x,CH/2);
+      ctx.font=`bold ${SQ*0.18}px sans-serif`;
+      ctx.fillStyle='#79c0ff';
+      ctx.fillText(`${s.turnsLeft}T`,x,CH/2+SQ*0.3);
+    }
+  }
+}
+
+function renderAll(){
+  drawBoard();
+  updatePanels();
+}
+
+function updatePanels(){
+  document.getElementById('stat-round').textContent=G.round;
+  const wp=G.phoenix[W];
+  const bp=G.phoenix[B];
+  document.getElementById('stat-wp').textContent=
+    wp.permanent?'permanent':wp.lives===0?'eliminated':`${wp.lives} lives · round ${roundsAlive(W)}`;
+  document.getElementById('stat-bp').textContent=
+    bp.permanent?'permanent':bp.lives===0?'eliminated':`${bp.lives} lives · round ${roundsAlive(B)}`;
+  const ws=G.spectre[W];
+  const bs=G.spectre[B];
+  document.getElementById('stat-ws').textContent=ws.offBoard?`off-board (${ws.turnsLeft}T left)`:'on board';
+  document.getElementById('stat-bs').textContent=bs.offBoard?`off-board (${bs.turnsLeft}T left)`:'on board';
+
+  // Show Fire Tribunal button if eligible
+  const fireElig=canFireTribunal(W);
+  document.getElementById('btn-fire').style.display=fireElig?'block':'none';
+
+  // Return spectre button
+  const ws2=G.spectre[W];
+  const spectreBtn=document.getElementById('btn-spectre');
+  if(ws2.offBoard&&G.turn===W&&!G.gameOver){
+    spectreBtn.style.display='block';
+    spectreBtn.textContent=`Return Spectre (${ws2.turnsLeft}T left)`;
+  } else {
+    spectreBtn.style.display='none';
+  }
+}
+
+function roundsAlive(color){
+  const ph=G.phoenix[color];
+  if(ph.lives===0)return 0;
+  if(!ph.solarRound)return 0;
+  return G.round-ph.solarRound;
+}
+
+function canFireTribunal(color){
+  if(G.gameOver||G.turn!==color)return false;
+  const enemyPh=G.phoenix[opp(color)];
+  if(enemyPh.lives===3||enemyPh.lives===0||enemyPh.permanent)return false;
+  // need own pieces summing ≥7 (excluding King and Phoenix)
+  let total=0;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const p=G.board[r][c];
+    if(p&&p.color===color&&p.type!=='K'&&p.type!=='F')total+=PIECE_VALUE[p.type]||0;
+  }
+  return total>=7;
+}
+
+// ═══════════════════════════════════════════════════════
+//  STATUS BAR
+// ═══════════════════════════════════════════════════════
+function setStatus(msg,cls='info'){
+  const el=document.getElementById('status-bar');
+  el.textContent=msg;
+  el.className=cls;
+}
+
+// ═══════════════════════════════════════════════════════
+//  MOVE LOG
+// ═══════════════════════════════════════════════════════
+function logMove(msg,special=false){
+  const el=document.getElementById('move-log');
+  const d=document.createElement('div');
+  if(special)d.className='special-log';
+  d.textContent=msg;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════
+//  PROMOTION DIALOG
+// ═══════════════════════════════════════════════════════
+function showPromoDialog(r,c,color,callback){
+  const opts=['D','T','L','P','C','S','F'];
+  const names={D:'Queen',T:'Rook',L:'Bishop',P:'Knight',C:'Crusader',S:'Spectre',F:'Phoenix'};
+  const box=document.getElementById('promo-btns');
+  box.innerHTML='';
+  for(const t of opts){
+    const btn=document.createElement('button');
+    btn.className='promo-btn';
+    btn.textContent=`${PIECE_GLYPHS[color][t]} ${names[t]}`;
+    btn.onclick=()=>{
+      document.getElementById('promo-modal').classList.remove('show');
+      callback(t);
+    };
+    box.appendChild(btn);
+  }
+  document.getElementById('promo-modal').classList.add('show');
+}
+
+// ═══════════════════════════════════════════════════════
+//  EXECUTE A MOVE (human or bot)
+// ═══════════════════════════════════════════════════════
+function executeMove(from,to,rawMove,promoType){
+  const{board,ep,castling,vanguard,spectre,phoenix}=G;
+  const p=board[from.r][from.c];
+  if(!p)return;
+  const color=p.color;
+
+  // Apply move
+  let{board:nb,ep:nep,castling:nc}=applyMoveToBoard(board,from,{r:rawMove.r,c:rawMove.c},rawMove.special,ep,castling,vanguard);
+
+  // Handle shadow infiltration landing
+  if(rawMove.special==='shadow'){
+    // board already has the piece on land square from applyMoveToBoard
+    // nothing extra needed
+  }
+
+  // En passant - captured pawn removal already done in applyMoveToBoard
+
+  let moveStr=`${color==='white'?'W':'B'}: ${PNAMES[p.type]} ${coord(from.r,from.c)}→${coord(to.r,to.c)}`;
+  let specialMsg=null;
+
+  // Phoenix capture check
+  for(const col of[W,B]){
+    const phState=G.phoenix[col];
+    if(phState.lives>0&&!phState.permanent){
+      // Find if phoenix was on the board before and is not now
+      const ph=nb[to.r]&&nb[to.r][to.c];
+      // Check: was a Phoenix of 'col' captured?
+      const wasPhoenix=board[to.r]&&board[to.r][to.c]&&board[to.r][to.c].type==='F'&&board[to.r][to.c].color===col;
+      // Also shadow capture
+      const wasShadowCap=rawMove.special==='shadow'&&board[rawMove.r]&&board[rawMove.r][rawMove.c]&&board[rawMove.r][rawMove.c].type==='F'&&board[rawMove.r][rawMove.c].color===col;
+      if(wasPhoenix||wasShadowCap){
+        phState.lives--;
+        phState.solarRound=0;
+        specialMsg=`💥 ${col} Phoenix captured! Lives left: ${phState.lives}`;
+        if(phState.lives>0){
+          // respawn
+          const hr=col===W?8:1,hc=7;
+          const occupant=nb[hr][hc];
+          if(occupant){
+            // Crash rule: occupying piece destroyed; if own King → that side loses
+            if(occupant.type==='K'){
+              specialMsg+=` — CRASH RULE: ${col} King destroyed! ${opp(col)} wins!`;
+              nb[hr][hc]={type:'F',color:col,moved:false};
+              G.board=nb;G.ep=nep;G.castling=nc;
+              endGame(opp(col));
+              logMove(moveStr);
+              if(specialMsg)logMove(specialMsg,true);
+              renderAll();
+              return;
+            }
+            specialMsg+=` — Crash: ${PNAMES[occupant.type]} destroyed!`;
+            nb[hr][hc]=null;
+          }
+          nb[hr][hc]={type:'F',color:col,moved:false};
+          specialMsg+=` Respawned at ${coord(hr,hc)}!`;
+        } else {
+          // permanently removed
+          specialMsg+=` — Phoenix permanently eliminated!`;
+          nb[hr]&&(nb[hr][7]=null); // ensure removed
+        }
+      }
+    }
+  }
+
+  // Pawn promotion
+  if(p.type==='p'){
+    const promoRow=color===W?0:9;
+    if(to.r===promoRow){
+      if(promoType){
+        nb[to.r][to.c]={type:promoType,color,moved:true};
+        if(promoType==='F'){
+          // New phoenix on first life
+          G.phoenix[color]={lives:3,solarRound:G.round,permanent:false};
+        }
+        if(promoType==='S'){
+          // Spectre placed on board
+          G.spectre[color]={offBoard:false,turnsLeft:0};
+        }
+        moveStr+=` → ${PNAMES[promoType]}`;
+        specialMsg=(specialMsg||'')+` Grand Promotion: ${PNAMES[promoType]}!`;
+      } else {
+        // Need to ask (human turn only)
+        G.board=nb;G.ep=nep;G.castling=nc;
+        showPromoDialog(to.r,to.c,color,(chosen)=>{
+          nb[to.r][to.c]={type:chosen,color,moved:true};
+          if(chosen==='F') G.phoenix[color]={lives:3,solarRound:G.round,permanent:false};
+          if(chosen==='S') G.spectre[color]={offBoard:false,turnsLeft:0};
+          moveStr+=` → ${PNAMES[chosen]}`;
+          logMove(moveStr);
+          logMove(`Grand Promotion: ${PNAMES[chosen]}!`,true);
+          G.board=nb;
+          afterMove(color,nb,nep,nc);
+        });
+        return;
+      }
+    }
+  }
+
+  // Vanguard Pawn upgrade: pawn lands on enemy blessed square
+  if(p.type==='p'){
+    const enemyBlue=color===W?{r:1,c:2}:{r:8,c:2};
+    const enemyOrange=color===W?{r:1,c:7}:{r:8,c:7};
+    if((to.r===enemyBlue.r&&to.c===enemyBlue.c)||(to.r===enemyOrange.r&&to.c===enemyOrange.c)){
+      G.vanguard.add(`${to.r},${to.c}`);
+      specialMsg=(specialMsg||'')+` Pawn upgraded to Vanguard!`;
+    }
+  }
+
+  G.board=nb;G.ep=nep;G.castling=nc;
+
+  logMove(moveStr);
+  if(specialMsg)logMove(specialMsg,true);
+
+  afterMove(color,nb,nep,nc);
+}
+
+function afterMove(color,board,ep,castling){
+  // Decrement spectre off-board counter for the player who just moved
+  const sc=G.spectre[color];
+  if(sc.offBoard){
+    sc.turnsLeft--;
+    if(sc.turnsLeft<=0){
+      // Permanently eliminated
+      sc.offBoard=false;
+      G.spectre[color]={offBoard:false,turnsLeft:-1}; // -1 = eliminated
+      logMove(`☠ ${color} Spectre eliminated (missed return)!`,true);
+    }
+  }
+
+  // Phoenix solar countdown
+  for(const col of[W,B]){
+    const ph=G.phoenix[col];
+    if(ph.lives>0&&!ph.permanent&&ph.solarRound===0){
+      // Check if phoenix is on board
+      let found=false;
+      for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+        if(G.board[r][c]&&G.board[r][c].type==='F'&&G.board[r][c].color===col){found=true;break;}
+      }
+      if(found&&!ph.solarRound){ph.solarRound=G.round;}
+    }
+  }
+
+  // Increment round after Black moves
+  if(color===B) G.round++;
+
+  // Switch turn
+  G.turn=opp(color);
+  G.selected=null;
+  G.legalMoves=[];
+
+  // Check game conditions
+  const nextLegal=legalMoves(G.board,G.turn,G.ep,G.spectre,G.castling,G.vanguard);
+
+  if(nextLegal.length===0){
+    if(inCheck(G.board,G.turn,G.ep,G.spectre,G.castling,G.vanguard)){
+      endGame(opp(G.turn));
+    } else {
+      endGame(null); // stalemate
+    }
+    renderAll();
+    return;
+  }
+
+  // Solar countdown victory check
+  for(const col of[W,B]){
+    const ph=G.phoenix[col];
+    if(ph.lives>0&&!ph.permanent&&ph.solarRound>0){
+      const rounds=G.round-ph.solarRound;
+      if(rounds>=15&&G.turn===col){
+        // Player must claim; we auto-announce for human, bot always claims
+        if(col===W){
+          if(confirm(`Your Phoenix has survived 15 rounds! Claim Solar victory?`)){
+            endGame(W,'Solar Countdown');
+            renderAll();
+            return;
+          } else {
+            logMove('⚠ Solar victory forfeited!',true);
+            ph.permanent=true;
+          }
+        } else {
+          logMove('🌟 Bot claims Solar Countdown victory!',true);
+          endGame(B,'Solar Countdown');
+          renderAll();
+          return;
+        }
+      }
+    }
+  }
+
+  renderAll();
+
+  // Bot move
+  if(G.turn===B&&!G.gameOver){
+    setStatus('Bot is thinking…','info');
+    setTimeout(()=>botMove(),200);
+  } else if(!G.gameOver){
+    if(inCheck(G.board,W,G.ep,G.spectre,G.castling,G.vanguard)){
+      setStatus('You are in CHECK! Defend your King.','check');
+    } else {
+      // Check if spectre must return
+      const ws=G.spectre[W];
+      if(ws.offBoard&&ws.turnsLeft===0){
+        setStatus('⚠ You MUST return your Spectre this turn (or lose it)!','check');
+      } else {
+        setStatus(`Your turn (Round ${G.round})${ws.offBoard?' — Spectre off-board ('+ws.turnsLeft+'T)':''}`, 'info');
+      }
+    }
+  }
+}
+
+function endGame(winner,reason){
+  G.gameOver=true;
+  G.winner=winner;
+  if(!winner){
+    setStatus('STALEMATE — Draw!','info');
+    logMove('=== DRAW (Stalemate) ===',true);
+  } else {
+    const rstr=reason?` by ${reason}`:'';
+    setStatus(`${winner.toUpperCase()} WINS${rstr}! 🎉`,'good');
+    logMove(`=== ${winner.toUpperCase()} WINS${rstr} ===`,true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  SPECTRE PHASE SHIFT
+// ═══════════════════════════════════════════════════════
+function activatePhaseShift(color){
+  // Remove spectre from board
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if(G.board[r][c]&&G.board[r][c].type==='S'&&G.board[r][c].color===color){
+      G.board[r][c]=null;
+      G.spectre[color]={offBoard:true,turnsLeft:3};
+      logMove(`👁 ${color} Spectre enters Phase Shift (3 turns)!`,true);
+      afterMove(color,G.board,G.ep,G.castling);
+      return true;
+    }
+  }
+  return false;
+}
+
+function returnSpectre(color,tr,tc){
+  if(!G.board[tr][tc]){
+    G.board[tr][tc]={type:'S',color,moved:true};
+    G.spectre[color]={offBoard:false,turnsLeft:0};
+    logMove(`👁 ${color} Spectre returned to ${coord(tr,tc)}!`,true);
+    afterMove(color,G.board,G.ep,G.castling);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  CANVAS CLICK (human)
+// ═══════════════════════════════════════════════════════
+let returningSpectre=false;
+
+canvas.addEventListener('click',e=>{
+  if(G.gameOver||G.turn!==W)return;
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  const c=Math.floor(x/SQ),r=Math.floor(y/SQ);
+  if(!inBounds(r,c))return;
+
+  if(returningSpectre){
+    if(!G.board[r][c]){
+      returningSpectre=false;
+      returnSpectre(W,r,c);
+    }
+    return;
+  }
+
+  if(G.selected){
+    // Try to move
+    const mv=G.legalMoves.find(m=>m.r===r&&m.c===c);
+    if(mv){
+      const from=G.selected;
+      G.selected=null;G.legalMoves=[];
+      executeMove(from,{r,c},mv);
+      return;
+    }
+    // Re-select own piece
+    G.selected=null;G.legalMoves=[];
+  }
+
+  // Select piece
+  const p=G.board[r][c];
+  if(p&&p.color===W){
+    G.selected={r,c};
+    const all=legalMoves(G.board,W,G.ep,G.spectre,G.castling,G.vanguard);
+    G.legalMoves=all.filter(m=>m.from.r===r&&m.from.c===c).map(m=>m.raw);
+    renderAll();
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  BOT (minimax depth 2, ~650 ELO with blunders)
+// ═══════════════════════════════════════════════════════
+function evaluate(board,vanguard,spectre,phoenix){
+  let score=0;
+  const pst={
+    p:[0,0,0,0,0,0,0,0,0,0,
+       0,5,5,5,5,5,5,5,5,0,
+       0,5,10,10,10,10,10,10,5,0,
+       0,5,10,20,20,20,20,10,5,0,
+       0,5,10,20,25,25,20,10,5,0,
+       0,5,10,20,25,25,20,10,5,0,
+       0,5,10,10,10,10,10,10,5,0,
+       0,5,5,5,5,5,5,5,5,0,
+       0,0,0,0,0,0,0,0,0,0,
+       0,0,0,0,0,0,0,0,0,0],
+  };
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const p=board[r][c];
+    if(!p)continue;
+    const v=(PIECE_VALUE[p.type]||0)*100;
+    const ps=p.type==='p'?(pst.p[r*N+c]||0):0;
+    const sign=p.color===B?1:-1;
+    score+=sign*(v+ps);
+  }
+  // Phoenix bonus for solar countdown
+  for(const col of[W,B]){
+    const ph=phoenix[col];
+    if(ph.lives>0&&!ph.permanent&&ph.solarRound){
+      const rounds=G.round-ph.solarRound;
+      const sign=col===B?1:-1;
+      score+=sign*rounds*8;
+    }
+  }
+  return score;
+}
+
+function botPickMove(board,ep,castling,vanguard,spectre,phoenix,depth,alpha,beta,maximizing){
+  const color=maximizing?B:W;
+  const mvs=legalMoves(board,color,ep,spectre,castling,vanguard);
+  if(mvs.length===0){
+    if(inCheck(board,color,ep,spectre,castling,vanguard))
+      return maximizing?-9000+depth:9000-depth;
+    return 0; // stalemate
+  }
+  if(depth===0) return evaluate(board,vanguard,spectre,phoenix);
+
+  let best=maximizing?-Infinity:Infinity;
+  for(const mv of mvs){
+    const{board:nb,ep:nep,castling:nc}=applyMoveToBoard(board,mv.from,{r:mv.raw.r,c:mv.raw.c},mv.raw.special,ep,castling,vanguard);
+    // simplified phoenix respawn for eval
+    const nph={[W]:{...phoenix[W]},[B]:{...phoenix[B]}};
+    const val=botPickMove(nb,nep,nc,vanguard,spectre,nph,depth-1,alpha,beta,!maximizing);
+    if(maximizing){best=Math.max(best,val);alpha=Math.max(alpha,val);}
+    else{best=Math.min(best,val);beta=Math.min(beta,val);}
+    if(beta<=alpha)break;
+  }
+  return best;
+}
+
+function botMove(){
+  if(G.gameOver)return;
+
+  // Spectre phase shift: bot may activate/return spectre
+  const bs=G.spectre[B];
+  if(bs.offBoard){
+    if(bs.turnsLeft<=1){
+      // Must return
+      const vacants=[];
+      for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!G.board[r][c])vacants.push({r,c});
+      if(vacants.length){
+        const sq=vacants[Math.floor(Math.random()*vacants.length)];
+        returnSpectre(B,sq.r,sq.c);
+        renderAll();
+        setStatus('Your turn','info');
+        return;
+      }
+    }
+    // Otherwise skip spectre return, make normal move
+  }
+
+  const mvs=legalMoves(G.board,B,G.ep,G.spectre,G.castling,G.vanguard);
+  if(mvs.length===0)return;
+
+  // Blunder: 28% chance play random move instead of best
+  const blunder=Math.random()<0.28;
+  let chosen;
+
+  if(blunder){
+    chosen=mvs[Math.floor(Math.random()*mvs.length)];
+  } else {
+    let bestVal=-Infinity,bestMoves=[];
+    for(const mv of mvs){
+      const{board:nb,ep:nep,castling:nc}=applyMoveToBoard(G.board,mv.from,{r:mv.raw.r,c:mv.raw.c},mv.raw.special,G.ep,G.castling,G.vanguard);
+      const nph={[W]:{...G.phoenix[W]},[B]:{...G.phoenix[B]}};
+      const val=botPickMove(nb,nep,nc,G.vanguard,G.spectre,nph,2,-Infinity,Infinity,false);
+      if(val>bestVal){bestVal=val;bestMoves=[mv];}
+      else if(val===bestVal)bestMoves.push(mv);
+    }
+    chosen=bestMoves[Math.floor(Math.random()*bestMoves.length)];
+  }
+
+  // Bot promotion: always picks Queen
+  const p=G.board[chosen.from.r][chosen.from.c];
+  const promoRow=p&&p.type==='p'&&chosen.to.r===(p.color===B?9:0);
+  executeMove(chosen.from,chosen.to,chosen.raw,promoRow?'D':null);
+  renderAll();
+  if(!G.gameOver) setStatus(`Your turn (Round ${G.round})`,'info');
+}
+
+// ═══════════════════════════════════════════════════════
+//  FIRE TRIBUNAL (human)
+// ═══════════════════════════════════════════════════════
+document.getElementById('btn-fire').addEventListener('click',()=>{
+  if(!canFireTribunal(W))return;
+  showFireModal();
+});
+
+function showFireModal(){
+  const pieces=[];
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const p=G.board[r][c];
+    if(p&&p.color===W&&p.type!=='K'&&p.type!=='F')
+      pieces.push({r,c,p});
+  }
+  const container=document.getElementById('fire-pieces');
+  container.innerHTML='';
+  let selected=[];
+  let total=0;
+
+  function updateTotal(){
+    total=selected.reduce((s,x)=>s+(PIECE_VALUE[x.p.type]||0),0);
+    document.getElementById('fire-total').textContent=`Selected: ${total} pts (need ≥7)`;
+    document.getElementById('fire-confirm').disabled=total<7;
+  }
+
+  for(const{r,c,p} of pieces){
+    const btn=document.createElement('button');
+    btn.className='fire-piece-btn';
+    btn.textContent=`${PIECE_GLYPHS[W][p.type]} ${PNAMES[p.type]} ${coord(r,c)} (${PIECE_VALUE[p.type]}pt)`;
+    btn.addEventListener('click',()=>{
+      const idx=selected.findIndex(x=>x.r===r&&x.c===c);
+      if(idx>=0){selected.splice(idx,1);btn.classList.remove('selected');}
+      else{selected.push({r,c,p});btn.classList.add('selected');}
+      updateTotal();
+    });
+    container.appendChild(btn);
+  }
+  updateTotal();
+  document.getElementById('fire-modal').classList.add('show');
+
+  document.getElementById('fire-confirm').onclick=()=>{
+    document.getElementById('fire-modal').classList.remove('show');
+    // Remove selected pieces
+    for(const{r,c} of selected) G.board[r][c]=null;
+    // Remove enemy phoenix permanently
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+      if(G.board[r][c]&&G.board[r][c].type==='F'&&G.board[r][c].color===B)
+        G.board[r][c]=null;
+    }
+    G.phoenix[B].lives=0;
+    logMove(`🔥 FIRE TRIBUNAL declared! Sacrificed ${total}pts. Black Phoenix permanently removed!`,true);
+    afterMove(W,G.board,G.ep,G.castling);
+    renderAll();
+  };
+  document.getElementById('fire-cancel').onclick=()=>{
+    document.getElementById('fire-modal').classList.remove('show');
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+//  SPECTRE RETURN BUTTON
+// ═══════════════════════════════════════════════════════
+document.getElementById('btn-spectre').addEventListener('click',()=>{
+  if(G.turn!==W||!G.spectre[W].offBoard)return;
+  returningSpectre=true;
+  setStatus('Click an empty square to return your Spectre','info');
+  G.selected=null;G.legalMoves=[];
+  renderAll();
+});
+
+// ═══════════════════════════════════════════════════════
+//  NEW GAME
+// ═══════════════════════════════════════════════════════
+document.getElementById('btn-new').addEventListener('click',()=>{
+  if(confirm('Start a new game?')){
+    document.getElementById('move-log').innerHTML='';
+    returningSpectre=false;
+    newGame();
+    setStatus('Your turn — click a piece to select it','info');
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════════════════
+newGame();
+setStatus('Your turn — click a piece to select it','info');
+</script>
+</body>
+</html>
