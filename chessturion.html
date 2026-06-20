@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHESSTURION: The 10×10 Chess Protocol</title>
+  <style>
+    :root {
+      --bg:     #0f1216;
+      --card:   #171d24;
+      --text:   #e2e8f0;
+      --gold:   #c5a880;
+      --orange: #ff6b00;
+      --blue:   #00adb5;
+      --purple: #9b5de5;
+      --border: #26313c;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      line-height: 1.65;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      padding: 44px 0 36px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      color: var(--gold);
+      font-size: 3rem;
+      margin: 0;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      text-shadow: 0 0 30px rgba(197,168,128,0.25);
+    }
+
+    .subtitle {
+      color: #8892b0;
+      margin-top: 8px;
+      letter-spacing: 2px;
+      font-size: 1.05rem;
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .tab-btn {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 22px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      transition: border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover { border-color: var(--gold); }
+
+    .tab-btn.active {
+      background: var(--gold);
+      color: #12161a;
+      border-color: var(--gold);
+      box-shadow: 0 0 18px rgba(197,168,128,0.3);
+    }
+
+    .tab-content {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 28px 30px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active { display: block; }
+
+    /* ── 3-D BOARD ── */
+    #board-3d {
+      width: 100%;
+      height: 520px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #060a0e;
+      cursor: grab;
+      position: relative;
+    }
+
+    #board-3d:active { cursor: grabbing; }
+
+    .board-hint {
+      text-align: center;
+      color: #4a5a6a;
+      font-size: 0.82rem;
+      margin-top: 6px;
+    }
+
+    /* ── LEGEND ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ── RULE CARDS ── */
+    .rule-card {
+      border-left: 4px solid var(--orange);
+      padding: 16px 20px;
+      margin: 14px 0;
+      border-radius: 0 8px 8px 0;
+      background: rgba(0,0,0,0.15);
+    }
+
+    .rule-card.blue   { border-left-color: var(--blue); }
+    .rule-card.purple { border-left-color: var(--purple); }
+
+    .rule-card h3 {
+      margin-top: 0;
+      color: var(--gold);
+    }
+
+    /* ── ALERTS ── */
+    .alert {
+      padding: 13px 16px;
+      border-radius: 6px;
+      margin: 12px 0;
+    }
+
+    .alert-orange {
+      background: rgba(255,107,0,0.08);
+      border: 1px solid var(--orange);
+      color: #ffbe76;
+    }
+
+    .alert-red {
+      background: rgba(231,76,60,0.1);
+      border: 1px solid #e74c3c;
+      color: #ff7675;
+    }
+
+    /* ── TABLE ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 13px 15px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(0,0,0,0.3);
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    h2 { color: var(--gold); margin-top: 0; }
+
+    /* ── ANIMATION ── */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>Chessturion</h1>
+    <div class="subtitle">The Legendary 100-Field Protocol</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" onclick="openTab(event,'setup')">Army Setup (10×10)</button>
+    <button class="tab-btn" onclick="openTab(event,'phoenix')">The Phoenix</button>
+    <button class="tab-btn" onclick="openTab(event,'shadow')">The Shadow</button>
+    <button class="tab-btn" onclick="openTab(event,'janus')">The Janus</button>
+    <button class="tab-btn" onclick="openTab(event,'classic')">Classic Rules</button>
+  </nav>
+
+  <!-- ════════════════════════════════════════ TAB: SETUP ═══ -->
+  <div id="setup" class="tab-content active">
+    <h2>The Hundred-Field Battlefield</h2>
+    <p>
+      In <strong>Chessturion</strong>, two armies clash on an expanded 10×10 grid of 100 squares.
+      The 3D board below shows the exact starting positions of all traditional pieces
+      alongside the three new commanders.
+    </p>
+
+    <div id="board-3d"></div>
+    <p class="board-hint">Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Right-drag to pan</p>
+
+    <div class="legend">
+      <div class="legend-item">
+        <div class="dot" style="background:#7a3200;"></div>
+        Fire Zone — Phoenix respawn (H2 · H9)
+      </div>
+      <div class="legend-item">
+        <div class="dot" style="background:#004a50;"></div>
+        Shadow Zone — Shadow start (C2 · C9)
+      </div>
+      <div class="legend-item">
+        <div class="dot" style="background:#3a1060;"></div>
+        Janus Gates (C1 · H1 · C10 · H10)
+      </div>
+      <div class="legend-item">
+        <div class="dot" style="background:#f0e2cc; border:1px solid #666;"></div>
+        White pieces
+      </div>
+      <div class="legend-item">
+        <div class="dot" style="background:#261510; border:1px solid #555;"></div>
+        Black pieces
+      </div>
+    </div>
+
+    <table style="margin-top:24px">
+      <tr>
+        <th>Symbol</th>
+        <th>Piece</th>
+        <th>Symbol</th>
+        <th>Piece</th>
+      </tr>
+      <tr>
+        <td><strong>K</strong></td><td>King</td>
+        <td><strong>D</strong></td><td>Queen</td>
+      </tr>
+      <tr>
+        <td><strong>T</strong></td><td>Rook</td>
+        <td><strong>L</strong></td><td>Bishop</td>
+      </tr>
+      <tr>
+        <td><strong>P</strong></td><td>Knight</td>
+        <td><strong>p</strong></td><td>Pawn</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--orange)">F</strong></td><td>Phoenix (new)</td>
+        <td><strong style="color:var(--blue)">S</strong></td><td>Shadow (new)</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--purple)">J</strong></td><td>Janus (new)</td>
+        <td></td><td></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ════════════════════════════════════════ TAB: PHOENIX ═ -->
+  <div id="phoenix" class="tab-content">
+    <h2>The Phoenix <span style="color:var(--orange)">🔥</span></h2>
+    <p><em>Recognisable by its orange, flame-like aesthetic and its solid wooden base.
+    This mighty creature introduces a ticking time-bomb on the board.</em></p>
+
+    <div class="rule-card">
+      <h3>Regular Movement</h3>
+      <p>Moves identically to the traditional King: <strong>1 square in any direction</strong>.</p>
+    </div>
+
+    <div class="rule-card">
+      <h3>Special Power 1 — Solar Countdown</h3>
+      <p>
+        If the Phoenix survives <strong>15 complete game rounds</strong>
+        (15 moves by White <em>and</em> 15 by Black), the owning player may claim
+        an immediate victory at the start of round 16. The enemy King is declared vanquished.
+      </p>
+      <div class="alert alert-orange">
+        <strong>⚠ THE FORGET RULE:</strong> If you fail to claim victory at the very start
+        of round 16 and instead make a normal move, the countdown is irrevocably forfeited
+        for the rest of the game.
+      </div>
+    </div>
+
+    <div class="rule-card">
+      <h3>Special Power 2 — Resurrection (Respawn)</h3>
+      <p>
+        The Phoenix has exactly <strong>3 lives</strong>. When captured, it immediately
+        returns to its starting square (<strong>H2 for White / H9 for Black</strong>)
+        and the Solar Countdown resets to 0. On the 3rd capture the Phoenix is permanently removed.
+      </p>
+      <div class="alert alert-red">
+        <strong>💥 THE PHOENIX CRASH RULE:</strong> If the respawn square (H2 or H9) is
+        occupied when the Phoenix returns, that piece is instantly destroyed — regardless
+        of colour. If that piece is your own King, you lose the game immediately.
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════ TAB: SHADOW ══ -->
+  <div id="shadow" class="tab-content">
+    <h2>The Shadow <span style="color:var(--blue)">👁</span></h2>
+    <p><em>A matte-blue, semi-transparent figure with a smooth abstract face.
+    It excels at guerrilla tactics and deep infiltration.</em></p>
+
+    <div class="rule-card blue">
+      <h3>Regular Movement</h3>
+      <p>
+        Slides <strong>1 or 2 squares</strong> in any direction (horizontal, vertical, or diagonal).
+        Its entire path must be clear — it cannot jump over pieces.
+      </p>
+    </div>
+
+    <div class="rule-card blue">
+      <h3>Power 1 — Phase Shift (Invisibility)</h3>
+      <p>
+        The Shadow may be removed from the board for <strong>exactly 3 turns</strong>.
+        Returning it to any free square of your choice costs one full move.
+      </p>
+      <div class="alert alert-red">
+        <strong>⚠ THE FORGET RULE:</strong> If the Shadow is not returned after exactly
+        3 turns, it is permanently removed from the game.
+      </div>
+    </div>
+
+    <div class="rule-card blue">
+      <h3>Power 2 — Shadow Infiltration</h3>
+      <p>
+        The Shadow may capture an enemy piece within range, but must land on the square
+        <strong>directly beyond</strong> that enemy in a straight line.
+        That landing square must be empty — otherwise the capture is illegal.
+      </p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════ TAB: JANUS ═══ -->
+  <div id="janus" class="tab-content">
+    <h2>The Janus (The Gatekeeper) <span style="color:var(--purple)">🛡</span></h2>
+    <p><em>Positioned on the C- and H-files of each back rank.
+    The ultimate tactical connector of the army.</em></p>
+
+    <div class="rule-card purple">
+      <h3>Hybrid Movement</h3>
+      <p>
+        The Janus combines the full attacking power of a <strong>Bishop</strong>
+        and a <strong>Knight</strong>. In a single turn it may either glide an
+        unlimited number of squares diagonally, <em>or</em> leap in an L-shape
+        over other pieces. This dual mobility makes it extremely dangerous
+        at breaking open enemy lines.
+      </p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════ TAB: CLASSIC ═ -->
+  <div id="classic" class="tab-content">
+    <h2>Classic Rules in Chessturion</h2>
+    <p>All standard chess rules remain in force, scaled to the 100-square grid:</p>
+
+    <table>
+      <tr>
+        <th>Rule</th>
+        <th>Application on the 10×10 Board</th>
+      </tr>
+      <tr>
+        <td><strong>Castling</strong></td>
+        <td>
+          The King slides two squares toward a Rook (A- or J-file), after which
+          the Rook jumps to the square the King just crossed. Not permitted while
+          in check or if any square between them is occupied.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>En Passant</strong></td>
+        <td>
+          If an enemy pawn advances two squares from its starting row (row 3 or row 8)
+          and lands beside your pawn, you may capture it as if it had moved only one square.
+          This capture must be made on your very next move.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Promotion</strong></td>
+        <td>
+          A pawn reaching the far end of the board (row 10 for White, row 1 for Black)
+          is immediately promoted to any officer of the owning player's choice:
+          Queen, Rook, Bishop, or Knight.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Stalemate</strong></td>
+        <td>
+          If a player to move has no legal moves and their King is not in check,
+          the game ends immediately as a draw. All countdowns and extra lives
+          are cancelled at that moment.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+</div><!-- /.container -->
+
+<!-- ═══════════════════════════════ THREE.JS ════════════════ -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── constants ──────────────────────────────────────────────
+const N  = 10;
+const SQ = 1.06;   // square pitch (includes tiny gap)
+
+// Board data: row 0 = rank 10 (black back), row 9 = rank 1 (white back)
+const LAYOUT = [
+  ['T','P','J','L','D','K','L','J','P','T'],
+  ['.','.','S','.','.','.','.','F','.','.'],
+  ['p','p','p','p','p','p','p','p','p','p'],
+  ['.','.','.','.','.','.','.','.','.','.'],
+  ['.','.','.','.','.','.','.','.','.','.'],
+  ['.','.','.','.','.','.','.','.','.','.'],
+  ['.','.','.','.','.','.','.','.','.','.'],
+  ['p','p','p','p','p','p','p','p','p','p'],
+  ['.','.','S','.','.','.','.','F','.','.'],
+  ['T','P','J','L','D','K','L','J','P','T'],
+];
+
+// ── scene ──────────────────────────────────────────────────
+const container = document.getElementById('board-3d');
+const W = Math.max(container.clientWidth, 320);
+const H = 520;
+
+const scene    = new THREE.Scene();
+scene.background = new THREE.Color(0x060a0e);
+
+const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
+camera.position.set(0, 14, 11.5);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+// ── controls ───────────────────────────────────────────────
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping  = true;
+controls.dampingFactor  = 0.06;
+controls.minDistance    = 7;
+controls.maxDistance    = 26;
+controls.maxPolarAngle  = Math.PI / 2.05;
+controls.target.set(0, 0, 0);
+
+// ── lighting ───────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+
+const sun = new THREE.DirectionalLight(0xfff4e0, 1.3);
+sun.position.set(6, 18, 9);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { near:0.5, far:50, left:-13, right:13, top:13, bottom:-13 });
+scene.add(sun);
+
+const rim = new THREE.DirectionalLight(0x5060cc, 0.35);
+rim.position.set(-8, 5, -9);
+scene.add(rim);
+
+// ── board base ─────────────────────────────────────────────
+const baseW = N * SQ + 1.5;
+const baseMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(baseW, 0.55, baseW),
+  new THREE.MeshStandardMaterial({ color: 0x140a04, roughness: 0.85, metalness: 0 })
+);
+baseMesh.position.y = -0.22;
+baseMesh.receiveShadow = true;
+scene.add(baseMesh);
+
+// ── square colours ─────────────────────────────────────────
+function squareColor(r, c) {
+  // Spawn-zone overrides
+  if ((r === 1 && c === 7) || (r === 8 && c === 7)) return 0x7a3200; // Phoenix
+  if ((r === 1 && c === 2) || (r === 8 && c === 2)) return 0x004a50; // Shadow
+  if ((r === 0 || r === 9) && (c === 2 || c === 7)) return 0x3a1060; // Janus
+  return (r + c) % 2 === 0 ? 0xd2c09c : 0x7a6348;
+}
+
+// ── squares ────────────────────────────────────────────────
+const sqGeo = new THREE.BoxGeometry(SQ - 0.05, 0.12, SQ - 0.05);
+for (let r = 0; r < N; r++) {
+  for (let c = 0; c < N; c++) {
+    const sq = new THREE.Mesh(
+      sqGeo,
+      new THREE.MeshStandardMaterial({ color: squareColor(r, c), roughness: 0.55, metalness: 0.05 })
+    );
+    sq.position.set((c - (N-1)/2) * SQ, 0.06, (r - (N-1)/2) * SQ);
+    sq.receiveShadow = true;
+    scene.add(sq);
+  }
+}
+
+// ── piece colours ──────────────────────────────────────────
+function pieceColor(sym, isBlack) {
+  switch (sym) {
+    case 'F': return isBlack ? 0xcc3300 : 0xff7700;
+    case 'S': return isBlack ? 0x006677 : 0x00bac4;
+    case 'J': return isBlack ? 0x5a1a9b : 0xaa55ff;
+    default:  return isBlack ? 0x261510 : 0xf0e2cc;
+  }
+}
+
+// ── helpers ────────────────────────────────────────────────
+function cyl(mat, rTop, rBot, h, y) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, h, 16), mat);
+  m.position.y = y;  m.castShadow = true;
+  return m;
+}
+function sphere(mat, r, y) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 14), mat);
+  m.position.y = y;  m.castShadow = true;
+  return m;
+}
+function box(mat, w, h, d, x, y, z, rx=0, ry=0, rz=0) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  m.rotation.set(rx, ry, rz);
+  m.castShadow = true;
+  return m;
+}
+
+// ── piece factory ──────────────────────────────────────────
+const specialMats = [];   // for pulse animation
+
+function createPiece(sym, isBlack) {
+  const col  = pieceColor(sym, isBlack);
+  const isSpecial = 'FSJ'.includes(sym);
+  const mat  = new THREE.MeshStandardMaterial({
+    color: col, roughness: isSpecial ? 0.2 : 0.35, metalness: isSpecial ? 0.35 : 0.1,
+    emissive: isSpecial ? new THREE.Color(col) : new THREE.Color(0x000000),
+    emissiveIntensity: isSpecial ? 0.12 : 0,
+  });
+  if (isSpecial) specialMats.push({ mat, phase: Math.random() * Math.PI * 2 });
+
+  const g = new THREE.Group();
+
+  // Shared base: foot disc + taper stem
+  g.add(cyl(mat, 0.28, 0.34, 0.07, 0.035));
+  g.add(cyl(mat, 0.13, 0.27, 0.18, 0.16));
+
+  switch (sym) {
+    case 'p': { // Pawn
+      g.add(cyl(mat, 0.13, 0.13, 0.14, 0.32));
+      g.add(sphere(mat, 0.19, 0.52));
+      break;
+    }
+    case 'T': { // Rook
+      g.add(cyl(mat, 0.21, 0.21, 0.22, 0.36));
+      g.add(cyl(mat, 0.27, 0.27, 0.09, 0.515));  // crown flange
+      // Battlements: 4 small boxes on top
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2;
+        g.add(box(mat, 0.1, 0.1, 0.1,
+          Math.cos(a)*0.19, 0.615, Math.sin(a)*0.19));
+      }
+      break;
+    }
+    case 'P': { // Knight
+      g.add(cyl(mat, 0.15, 0.15, 0.18, 0.34));
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), mat);
+      head.scale.set(0.65, 1.25, 0.8);
+      head.position.set(0.07, 0.63, 0);
+      head.rotation.z = -0.28;
+      head.castShadow = true;
+      g.add(head);
+      // Ear nubs
+      g.add(box(mat, 0.06, 0.1, 0.05, 0.09, 0.82, 0.06));
+      g.add(box(mat, 0.06, 0.1, 0.05, 0.09, 0.82,-0.06));
+      break;
+    }
+    case 'L': { // Bishop
+      g.add(cyl(mat, 0.13, 0.18, 0.28, 0.39));
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.27, 12), mat);
+      cone.position.y = 0.67;  cone.castShadow = true;
+      g.add(cone);
+      g.add(sphere(mat, 0.05, 0.83));  // finial dot
+      break;
+    }
+    case 'D': { // Queen
+      g.add(cyl(mat, 0.14, 0.18, 0.32, 0.41));
+      g.add(sphere(mat, 0.21, 0.72));
+      const torus = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.04, 8, 24), mat);
+      torus.rotation.x = Math.PI / 2;  torus.position.y = 0.71;  torus.castShadow = true;
+      g.add(torus);
+      // Crown spikes
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        const sp = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 6), mat);
+        sp.position.set(Math.cos(a)*0.21, 0.82, Math.sin(a)*0.21);
+        sp.castShadow = true;
+        g.add(sp);
+      }
+      break;
+    }
+    case 'K': { // King
+      g.add(cyl(mat, 0.15, 0.18, 0.35, 0.425));
+      g.add(sphere(mat, 0.2, 0.79));
+      // Cross
+      g.add(box(mat, 0.28, 0.065, 0.065, 0, 0.97, 0));
+      g.add(box(mat, 0.065, 0.22, 0.065, 0, 1.01, 0));
+      break;
+    }
+    case 'F': { // Phoenix — flame crown
+      g.add(cyl(mat, 0.2, 0.22, 0.2, 0.35));
+      g.add(sphere(mat, 0.2, 0.56));
+      // Outer flame spikes
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        const sp = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.26, 6), mat);
+        sp.position.set(Math.cos(a)*0.18, 0.89, Math.sin(a)*0.18);
+        sp.castShadow = true;
+        g.add(sp);
+      }
+      // Central tall spike
+      const cs = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.34, 6), mat);
+      cs.position.y = 0.97;  cs.castShadow = true;
+      g.add(cs);
+      break;
+    }
+    case 'S': { // Shadow — elongated ghost body
+      g.add(cyl(mat, 0.2, 0.2, 0.2, 0.35));
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), mat);
+      body.scale.y = 1.55;
+      body.position.y = 0.67;
+      body.castShadow = true;
+      g.add(body);
+      // Eye dots
+      g.add(box(mat, 0.06, 0.04, 0.04,  0.1, 0.79, -0.17));
+      g.add(box(mat, 0.06, 0.04, 0.04, -0.1, 0.79, -0.17));
+      break;
+    }
+    case 'J': { // Janus — two-faced (twin spheres)
+      g.add(cyl(mat, 0.21, 0.21, 0.25, 0.375));
+      // Two side-by-side heads
+      g.add(sphere(mat, 0.17,  0.68));
+      const h2 = sphere(mat, 0.16, 0.72);
+      h2.position.x =  0.16;  g.add(h2);
+      const h3 = sphere(mat, 0.16, 0.72);
+      h3.position.x = -0.16;  g.add(h3);
+      // Connector bar
+      g.add(box(mat, 0.35, 0.06, 0.06, 0, 0.68, 0));
+      break;
+    }
+  }
+
+  return g;
+}
+
+// ── place pieces ───────────────────────────────────────────
+for (let r = 0; r < N; r++) {
+  for (let c = 0; c < N; c++) {
+    const sym = LAYOUT[r][c];
+    if (sym === '.') continue;
+
+    const isBlack = r <= 2;
+    const piece   = createPiece(sym, isBlack);
+    piece.position.set(
+      (c - (N-1)/2) * SQ,
+      0.12,
+      (r - (N-1)/2) * SQ
+    );
+    // Black pieces face inward
+    if (isBlack) piece.rotation.y = Math.PI;
+    scene.add(piece);
+  }
+}
+
+// ── resize ─────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  const w = container.clientWidth;
+  camera.aspect = w / H;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, H);
+});
+
+// ── animate ────────────────────────────────────────────────
+(function animate() {
+  requestAnimationFrame(animate);
+  const t = performance.now() * 0.001;
+  // Subtle pulse for special pieces
+  specialMats.forEach(({ mat, phase }) => {
+    mat.emissiveIntensity = 0.07 + Math.sin(t * 1.6 + phase) * 0.07;
+  });
+  controls.update();
+  renderer.render(scene, camera);
+})();
+</script>
+
+<!-- ═══════════════════════════════ TAB LOGIC ═══════════════ -->
+<script>
+function openTab(evt, id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  evt.currentTarget.classList.add('active');
+}
+</script>
+
+</body>
+</html>
