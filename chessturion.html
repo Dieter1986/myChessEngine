@@ -534,19 +534,13 @@ body {
 
 </main><!-- /.main -->
 
-<!-- ═══════════════ THREE.JS MODULE ═════════ -->
-<script type="importmap">
-{
-  "imports": {
-    "three":          "https://unpkg.com/three@0.157.0/build/three.module.js",
-    "three/addons/":  "https://unpkg.com/three@0.157.0/examples/jsm/"
-  }
-}
-</script>
+<!-- ═══════════════ THREE.JS (UMD) ══════════ -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/OrbitControls.js"></script>
 
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+<script>
+(function () {
+const OrbitControls = THREE.OrbitControls;
 
 /* ── constants ─────────────────────────────── */
 const N  = 10;
@@ -926,6 +920,7 @@ window.addEventListener('resize', () => {
   controls.update();
   renderer.render(scene, camera);
 })();
+})(); // end IIFE
 </script>
 
 <script>
