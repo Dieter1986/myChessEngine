@@ -307,7 +307,7 @@ body {
 
 <header class="site-header">
   <h1>Chessturion</h1>
-  <div class="tagline">Official 10×10 Interactive Rulebook &amp; Tutor</div>
+  <div class="tagline">Official 9×9 Interactive Rulebook &amp; Tutor</div>
 </header>
 
 <nav class="tab-bar">
@@ -322,7 +322,7 @@ body {
 
 <!-- ═══════════════════════════════ BOARD ══ -->
 <div id="board" class="tab-panel active">
-  <h2 class="section-title">The Hundred-Field Battlefield</h2>
+  <h2 class="section-title">The 9×9 Battlefield</h2>
   <p class="section-sub">Drag to rotate · Scroll to zoom · Right-drag to pan · Hover squares for info</p>
 
   <div class="board-viewport">
@@ -332,8 +332,8 @@ body {
   <p class="board-hint">All pieces rendered in Staunton style in their army colour (White ivory · Black ebony)</p>
 
   <div class="legend">
-    <div class="legend-item"><div class="dot" style="background:#1e4060"></div>Blue — Spectre home square (C2 · C9)</div>
-    <div class="legend-item"><div class="dot" style="background:#5a2a00"></div>Orange — Phoenix home square (H2 · H9)</div>
+    <div class="legend-item"><div class="dot" style="background:#1e4060"></div>Blue — Spectre home square (C2 · C8)</div>
+    <div class="legend-item"><div class="dot" style="background:#5a2a00"></div>Orange — Phoenix home square (G2 · G8)</div>
     <div class="legend-item"><div class="dot" style="background:#d4bc8c; border:1px solid #666"></div>Light square</div>
     <div class="legend-item"><div class="dot" style="background:#7a6248"></div>Dark square</div>
     <div class="legend-item"><div class="dot" style="background:#f2e8d5; border:1px solid #888"></div>White pieces</div>
@@ -344,32 +344,33 @@ body {
 
   <table class="data-table">
     <tr><th>Symbol</th><th>Piece</th><th>Start position(s)</th></tr>
-    <tr><td><strong>K</strong></td><td>King</td><td>F1 / F10</td></tr>
-    <tr><td><strong>D</strong></td><td>Queen</td><td>E1 / E10</td></tr>
-    <tr><td><strong>T</strong></td><td>Rook</td><td>A1, J1 / A10, J10</td></tr>
-    <tr><td><strong>L</strong></td><td>Bishop</td><td>D1, G1 / D10, G10</td></tr>
-    <tr><td><strong>P</strong></td><td>Knight</td><td>B1, I1 / B10, I10</td></tr>
-    <tr><td><strong>C</strong></td><td style="color:var(--gold)">Paladin</td><td>C1, H1 / C10, H10</td></tr>
-    <tr><td><strong>S</strong></td><td style="color:var(--blue)">Spectre</td><td><span style="color:var(--blue)">C2 (Blue)</span> / C9</td></tr>
-    <tr><td><strong>F</strong></td><td style="color:var(--orange)">Phoenix</td><td><span style="color:var(--orange)">H2 (Orange)</span> / H9</td></tr>
-    <tr><td><strong>p</strong></td><td>Pawn</td><td>A3–J3 / A8–J8</td></tr>
+    <tr><td><strong>K</strong></td><td>King</td><td>E1 / E9</td></tr>
+    <tr><td><strong>D</strong></td><td>Queen</td><td>D1 / D9</td></tr>
+    <tr><td><strong>T</strong></td><td>Rook</td><td>A1, I1 / A9, I9</td></tr>
+    <tr><td><strong>L</strong></td><td>Bishop</td><td>C1, G1 / C9, G9</td></tr>
+    <tr><td><strong>P</strong></td><td>Knight</td><td>B1, H1 / B9, H9</td></tr>
+    <tr><td><strong>X</strong></td><td style="color:var(--gold)">Robot</td><td>F1 / F9</td></tr>
+    <tr><td><strong>S</strong></td><td style="color:var(--blue)">Spectre</td><td><span style="color:var(--blue)">C2 (Blue)</span> / C8</td></tr>
+    <tr><td><strong>F</strong></td><td style="color:var(--orange)">Phoenix</td><td><span style="color:var(--orange)">G2 (Orange)</span> / G8</td></tr>
+    <tr><td><strong>p</strong></td><td>Pawn</td><td>A3–I3 / A7–I7</td></tr>
   </table>
 </div>
 
 <!-- ════════════════════════════════ PIECES ═ -->
 <div id="pieces" class="tab-panel">
   <h2 class="section-title">The Expansion Roster</h2>
-  <p class="section-sub">Three mythic commanders join the 10×10 battlefield alongside the classic Staunton army. Each piece is carved from the same solid wood as its army — no resin, no special colouring.</p>
+  <p class="section-sub">Three mythic commanders join the 9×9 battlefield alongside the classic Staunton army. Each piece is carved from the same solid wood as its army — no resin, no special colouring.</p>
 
   <div class="piece-grid">
 
     <div class="piece-card">
-      <div class="pc-icon">⚔️</div>
-      <h3>The Paladin</h3>
-      <span class="pc-tag tag-gold">C1 · H1 · C10 · H10</span>
-      <p><strong>Design:</strong> A robust medieval great helm, carved in the Staunton tradition — wide cylindrical body with a dome crown, T-shaped visor bars across the front.</p>
-      <p><strong>Movement:</strong> A hybrid heavy-cavalry unit that combines the complete legal movement of a <strong>Knight</strong> (L-leap) and a <strong>short diagonal slide of up to 3 squares</strong> in a single piece. On any given turn, choose one.</p>
-      <p><strong>Strategic role:</strong> The Paladin's dual mobility makes it a powerful mid-range threat — it can leap over obstructions like a Knight or cut across short diagonals, but its diagonal reach is limited to 3 squares, preventing it from dominating long open lines.</p>
+      <div class="pc-icon">🤖</div>
+      <h3>The Robot</h3>
+      <span class="pc-tag tag-gold">F1 · F9</span>
+      <p><strong>Design:</strong> A compact mechanical sentinel — a flat-topped cylindrical body with a wide collar and a visor stripe across its crown, distinct from any classical Staunton piece.</p>
+      <p><strong>Base Movement:</strong> Starts the game moving exactly like a King — <strong>1 square in any direction</strong>.</p>
+      <p><strong>Absorption Protocol:</strong> Each time the Robot captures an enemy piece, it <strong>permanently absorbs</strong> that piece's movement. From that moment onward the Robot may also move like the captured piece type (Knight leaps, Rook slides, etc.). Multiple absorptions stack — once the Robot has absorbed a Rook and a Bishop it also slides like a Queen. Absorbed abilities are never lost.</p>
+      <p><strong>Robot–Phoenix Meltdown:</strong> If the Robot captures (or is used to capture) a Phoenix — by any means including Shadow Infiltration — <strong>both pieces are instantly destroyed</strong> and the Phoenix loses all remaining lives. Neither piece can be recovered.</p>
     </div>
 
     <div class="piece-card">
@@ -385,7 +386,7 @@ body {
     <div class="piece-card">
       <div class="pc-icon">🔥</div>
       <h3>The Phoenix</h3>
-      <span class="pc-tag tag-orange">H2 (Orange) · H9 (Orange)</span>
+      <span class="pc-tag tag-orange">G2 (Orange) · G8 (Orange)</span>
       <p><strong>Design:</strong> A rising bird in the Staunton style — spread wings, a reaching neck, and an upward beak. Carved entirely in the army's solid wood.</p>
       <p><strong>Movement:</strong> Moves identically to the King — <strong>1 square in any direction</strong>.</p>
       <p><strong>Solar Countdown:</strong> On its <em>first life</em>, survive <strong>20 complete rounds</strong> and claim victory at the start of round 21. On its <em>second or third life</em>, the threshold drops to <strong>15 rounds</strong>. Missing the claim forfeits the countdown permanently.</p>
@@ -414,7 +415,7 @@ body {
   <div class="rule-box orange">
     <h4>Resurrection — 3 Lives</h4>
     <ul>
-      <li>On capture 1 or 2: Phoenix returns immediately to its home square (<strong>H2 for White / H9 for Black</strong>). Solar Countdown resets to 0.</li>
+      <li>On capture 1 or 2: Phoenix returns immediately to its home square (<strong>G2 for White / G8 for Black</strong>). Solar Countdown resets to 0.</li>
       <li><strong>Crash Rule:</strong> If the home square is occupied at the moment of return, the occupying piece is instantly destroyed — regardless of colour. If it is your own King, you lose immediately.</li>
       <li>On capture 3: the Phoenix is permanently removed from the game.</li>
     </ul>
@@ -442,11 +443,13 @@ body {
   <table class="data-table">
     <tr><th>Piece</th><th>Sacrifice Value</th></tr>
     <tr><td>Pawn</td><td><strong>1 point</strong></td></tr>
-    <tr><td>Knight / Bishop</td><td><strong>3 points</strong></td></tr>
+    <tr><td>Knight / Bishop / Robot</td><td><strong>3 points</strong></td></tr>
+    <tr><td>Spectre</td><td><strong>4 points</strong></td></tr>
     <tr><td>Rook</td><td><strong>5 points</strong></td></tr>
+    <tr><td>Phoenix</td><td><strong>6 points</strong></td></tr>
     <tr><td>Queen</td><td><strong>9 points</strong></td></tr>
   </table>
-  <p style="color:var(--muted);font-size:0.88rem">Example combinations reaching 7: Rook + 2 Pawns (5+1+1) · Knight + Bishop + Pawn (3+3+1) · 7 Pawns.</p>
+  <p style="color:var(--muted);font-size:0.88rem">Example combinations reaching 8: Rook + 3 Pawns (5+1+1+1) · Knight + Bishop + 2 Pawns (3+3+1+1) · 8 Pawns · Rook + Knight (5+3).</p>
 
   <div class="insight">
     <div class="insight-label">Strategic Insight</div>
@@ -464,12 +467,12 @@ body {
 
   <div class="rule-box blue">
     <h4>Spectre Squares (Blue)</h4>
-    <p>C2 (White's Spectre home) and C9 (Black's Spectre home) are permanently coloured <strong>blue</strong> for the entire game.</p>
+    <p>C2 (White's Spectre home) and C8 (Black's Spectre home) are permanently coloured <strong>blue</strong> for the entire game.</p>
   </div>
 
   <div class="rule-box orange">
     <h4>Phoenix Squares (Orange)</h4>
-    <p>H2 (White's Phoenix home) and H9 (Black's Phoenix home) are permanently coloured <strong>orange</strong> for the entire game. These are also the Phoenix's respawn squares.</p>
+    <p>G2 (White's Phoenix home) and G8 (Black's Phoenix home) are permanently coloured <strong>orange</strong> for the entire game. These are also the Phoenix's respawn squares.</p>
   </div>
 
   <hr class="divider">
@@ -487,14 +490,14 @@ body {
 
   <hr class="divider">
   <h3 style="color:var(--gold);margin-bottom:12px">Grand Promotion</h3>
-  <p style="color:var(--muted);margin-bottom:16px">When a Pawn reaches the opponent's back rank (row 10 for White / row 1 for Black), it undergoes a Grand Promotion.</p>
+  <p style="color:var(--muted);margin-bottom:16px">When a Pawn reaches the opponent's back rank (row 9 for White / row 1 for Black), it undergoes a Grand Promotion.</p>
 
   <div class="rule-box">
     <h4>Roster Choice</h4>
     <p>The promoting player may choose <strong>any piece from the Chessturion roster except the Phoenix</strong>:</p>
     <ul>
       <li>Queen, Rook, Bishop, Knight.</li>
-      <li><strong>The Paladin</strong> — the Knight-diagonal hybrid.</li>
+      <li><strong>The Robot</strong> — resets with an empty absorption list (no abilities absorbed yet).</li>
       <li><strong>The Spectre</strong> — the phantom infiltrator.</li>
     </ul>
     <p style="color:var(--muted);margin-top:10px"><strong>Note:</strong> A Pawn <em>cannot</em> promote into a Phoenix. The Phoenix each side receives at the start of the game is the only one they will ever have.</p>
@@ -503,22 +506,18 @@ body {
 
 <!-- ════════════════════════════ CLASSIC ════ -->
 <div id="classic" class="tab-panel">
-  <h2 class="section-title">Classic Rules — Scaled to 10×10</h2>
+  <h2 class="section-title">Classic Rules — Scaled to 9×9</h2>
   <p class="section-sub">All standard FIDE chess rules remain fully in effect, adapted to the expanded grid.</p>
 
   <table class="data-table">
-    <tr><th>Rule</th><th>10×10 Application</th></tr>
+    <tr><th>Rule</th><th>9×9 Application</th></tr>
     <tr>
       <td><strong>Castling</strong></td>
-      <td>The King slides <strong>three squares</strong> toward a Rook (A- or J-file), after which the Rook jumps to the square the King just crossed. Illegal while in check or if any intervening square is occupied.</td>
-    </tr>
-    <tr>
-      <td><strong>En Passant</strong></td>
-      <td>If an enemy pawn advances two squares from its starting row (row 3 or row 8) and lands beside your pawn, you may capture it as though it had moved only one square. Must be executed on your immediate next move.</td>
+      <td>The King slides <strong>three squares</strong> toward a Rook (A- or I-file), after which the Rook jumps to the square the King just crossed. Illegal while in check or if any intervening square is occupied.</td>
     </tr>
     <tr>
       <td><strong>Pawn Starting Move</strong></td>
-      <td>Pawns may advance one or two squares on their very first move. Row 3 for White, row 8 for Black.</td>
+      <td>Pawns may advance one or two squares on their very first move. Row 3 for White, row 7 for Black.</td>
     </tr>
     <tr>
       <td><strong>Check &amp; Checkmate</strong></td>
@@ -548,32 +547,31 @@ body {
 'use strict';
 
 /* ── board layout ─────────────────────────── */
-const N = 10;
+const N = 9;
 const SQ = 1.06;
-const FILES = 'ABCDEFGHIJ';
+const FILES = 'ABCDEFGHI';
 
 const LAYOUT = [
-  ['T','P','C','L','D','K','L','C','P','T'],
-  ['.','.','S','.','.','.','.','F','.','.'],
-  ['p','p','p','p','p','p','p','p','p','p'],
-  ['.','.','.','.','.','.','.','.','.','.'],
-  ['.','.','.','.','.','.','.','.','.','.'],
-  ['.','.','.','.','.','.','.','.','.','.'],
-  ['.','.','.','.','.','.','.','.','.','.'],
-  ['p','p','p','p','p','p','p','p','p','p'],
-  ['.','.','S','.','.','.','.','F','.','.'],
-  ['T','P','C','L','D','K','L','C','P','T'],
+  ['T','P','L','D','K','X','L','P','T'],
+  ['.','.','S','.','.','.',  'F','.','.'],
+  ['p','p','p','p','p','p','p','p','p'],
+  ['.','.','.','.','.','.','.','.','.'],
+  ['.','.','.','.','.','.','.','.','.'],
+  ['.','.','.','.','.','.','.','.','.'],
+  ['p','p','p','p','p','p','p','p','p'],
+  ['.','.','S','.','.','.',  'F','.','.'],
+  ['T','P','L','D','K','X','L','P','T'],
 ];
 
 const PIECE_NAMES = {
-  T:'Rook', P:'Knight', C:'Paladin', L:'Bishop',
+  T:'Rook', P:'Knight', X:'Robot', L:'Bishop',
   D:'Queen', K:'King', F:'Phoenix', S:'Spectre', p:'Pawn'
 };
 
-function coord(r, c) { return FILES[c] + (10 - r); }
+function coord(r, c) { return FILES[c] + (9 - r); }
 function sqColor(r, c) {
-  if ((r===1||r===8) && c===2) return '#1e4060';
-  if ((r===1||r===8) && c===7) return '#5a2a00';
+  if ((r===1||r===7) && c===2) return '#1e4060';
+  if ((r===1||r===7) && c===6) return '#5a2a00';
   return (r+c)%2===0 ? '#d4bc8c' : '#7a6248';
 }
 
@@ -586,7 +584,7 @@ const ctx = canvas.getContext('2d');
 
 /* ── camera ───────────────────────────────── */
 let theta=-0.4, phi=1.05, camR=18;
-const TGT=[5.3,0,5.3];
+const TGT=[4.77,0,4.77];
 let eye=[],fwd=[],right=[],up2=[];
 
 function vsub(a,b){return[a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
@@ -687,17 +685,15 @@ function pKing(wx,wz,ib){
   cyl(wx-0.15,wz,0.032,0.032,0.93,0.97,c.t,8);
   cyl(wx+0.15,wz,0.032,0.032,0.93,0.97,c.t,8);
 }
-function pPaladin(wx,wz,ib){
+function pRobot(wx,wz,ib){
   const c=pc(ib);pBase(wx,wz,c);
-  cyl(wx,wz,0.23,0.22,0.24,0.33,c.d);
-  cyl(wx,wz,0.255,0.265,0.33,0.63,c.m);
-  sph(wx,0.63,wz,0.265,c.t);
-  for(let i=0;i<3;i++){
-    const y=0.37+i*0.076;
-    const pa=proj([wx-0.265,y,wz-0.22]),pb=proj([wx+0.265,y,wz-0.22]);
-    if(!pa||!pb)continue;
+  cyl(wx,wz,0.22,0.22,0.24,0.48,c.m);
+  cyl(wx,wz,0.22,0.29,0.48,0.56,c.m);
+  disk(wx,0.60,wz,0.29,c.d);
+  const pa=proj([wx-0.29,0.60,wz-0.12]),pb=proj([wx+0.29,0.60,wz-0.12]);
+  if(pa&&pb){
     ctx.beginPath();ctx.moveTo(pa[0],pa[1]);ctx.lineTo(pb[0],pb[1]);
-    ctx.strokeStyle=shade(c.d,0.5);ctx.lineWidth=2;ctx.stroke();
+    ctx.strokeStyle=shade(c.t,1.6);ctx.lineWidth=3;ctx.stroke();
   }
 }
 function pSpectre(wx,wz,ib){const c=pc(ib);pBase(wx,wz,c);cyl(wx,wz,0.25,0.205,0.24,0.50,c.d);cyl(wx,wz,0.205,0.14,0.50,0.62,c.m);sph(wx,0.77,wz,0.20,c.t);}
@@ -711,7 +707,7 @@ function pPhoenix(wx,wz,ib){
   sph(wx,0.86,wz,0.10,c.t);
 }
 
-const DRAWERS={T:pRook,P:pKnight,C:pPaladin,L:pBishop,D:pQueen,K:pKing,F:pPhoenix,S:pSpectre,p:pPawn};
+const DRAWERS={T:pRook,P:pKnight,X:pRobot,L:pBishop,D:pQueen,K:pKing,F:pPhoenix,S:pSpectre,p:pPawn};
 function isBlackRow(r){return r<=2;}
 
 /* ── hover ────────────────────────────────── */
@@ -752,7 +748,7 @@ function draw(){
     ctx.closePath();ctx.fillStyle=sqColor(r,c);ctx.fill();
     ctx.strokeStyle='rgba(0,0,0,0.18)';ctx.lineWidth=0.5;ctx.stroke();
     const sym=LAYOUT[r][c];
-    const isBlue=(r===1||r===8)&&c===2, isOrange=(r===1||r===8)&&c===7;
+    const isBlue=(r===1||r===7)&&c===2, isOrange=(r===1||r===7)&&c===6;
     squarePolys.push({
       poly:sp.map(p=>[p[0],p[1]]),
       label:coord(r,c),
