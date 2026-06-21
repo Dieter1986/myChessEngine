@@ -815,10 +815,11 @@ function afterMove(color,board,ep,castling){
     const ph=G.phoenix[col];
     if(ph.lives>0&&!ph.permanent&&ph.solarRound>0){
       const rounds=G.round-ph.solarRound;
-      if(rounds>=15&&G.turn===col){
+      const threshold=ph.lives===3?20:15;
+      if(rounds>=threshold&&G.turn===col){
         // Player must claim; we auto-announce for human, bot always claims
         if(col===W){
-          if(confirm(`Your Phoenix has survived 15 rounds! Claim Solar victory?`)){
+          if(confirm(`Your Phoenix has survived ${threshold} rounds! Claim Solar victory?`)){
             endGame(W,'Solar Countdown');
             renderAll();
             return;
@@ -827,7 +828,7 @@ function afterMove(color,board,ep,castling){
             ph.permanent=true;
           }
         } else {
-          logMove('🌟 Bot claims Solar Countdown victory!',true);
+          logMove(`🌟 Bot claims Solar Countdown victory (${threshold} rounds)!`,true);
           endGame(B,'Solar Countdown');
           renderAll();
           return;
