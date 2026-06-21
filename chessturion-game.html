@@ -55,7 +55,7 @@ h1{font-size:1.6rem;letter-spacing:6px;color:#c9a84c;padding:18px 0 4px;text-tra
 </head>
 <body>
 <h1>Chessturion</h1>
-<p class="subtitle">You play White · Bot plays Black (~650 ELO)</p>
+<p class="subtitle">9×9 Edition · You play White · Bot plays Black (~650 ELO)</p>
 <div id="status-bar" class="info">Your turn — click a piece to select it</div>
 <div id="game-area">
 <div id="board-wrap">
@@ -74,6 +74,8 @@ h1{font-size:1.6rem;letter-spacing:6px;color:#c9a84c;padding:18px 0 4px;text-tra
     <div class="stat-row"><span>Black Phoenix</span><b id="stat-bp">3 lives · round 0</b></div>
     <div class="stat-row"><span>White Spectre</span><b id="stat-ws">on board</b></div>
     <div class="stat-row"><span>Black Spectre</span><b id="stat-bs">on board</b></div>
+    <div class="stat-row"><span>White Robot</span><b id="stat-wr">base</b></div>
+    <div class="stat-row"><span>Black Robot</span><b id="stat-br">base</b></div>
     <button class="btn" id="btn-fire" style="display:none;background:#3d1f1f;border-color:#f85149;color:#f85149;">Declare Fire Tribunal</button>
     <button class="btn" id="btn-spectre" style="display:none;">Phase Shift (remove Spectre)</button>
     <button class="btn danger" id="btn-new">New Game</button>
@@ -109,24 +111,24 @@ h1{font-size:1.6rem;letter-spacing:6px;color:#c9a84c;padding:18px 0 4px;text-tra
 // ═══════════════════════════════════════════════════════
 //  CONSTANTS & HELPERS
 // ═══════════════════════════════════════════════════════
-const N=10, SQ=52;
-const FILES='ABCDEFGHIJ';
+const N=9, SQ=56;
+const FILES='ABCDEFGHI';
 const W='white', B='black';
 const opp=c=>c===W?B:W;
 
-// piece symbols: uppercase=white, lowercase=black
-// T=Rook P=Knight C=Paladin L=Bishop D=Queen K=King S=Spectre F=Phoenix p/P=Pawn
-const PIECE_VALUE={K:999,D:9,T:5,L:3,P:3,C:7,S:4,F:6,p:1};
-const PNAMES={K:'King',D:'Queen',T:'Rook',L:'Bishop',P:'Knight',C:'Paladin',S:'Spectre',F:'Phoenix',p:'Pawn'};
+// piece symbols: T=Rook P=Knight X=Robot L=Bishop D=Queen K=King S=Spectre F=Phoenix p=Pawn
+// Robot stores absorbed moves in piece.absorbed array
+const PIECE_VALUE={K:999,D:9,T:5,L:3,P:3,X:3,S:4,F:6,p:1};
+const PNAMES={K:'King',D:'Queen',T:'Rook',L:'Bishop',P:'Knight',X:'Robot',S:'Spectre',F:'Phoenix',p:'Pawn'};
 
 function sym(piece){return piece?piece.type+(piece.color===W?piece.type.toUpperCase():piece.type.toLowerCase()):'.';}
 function isWhitePiece(p){return p&&p.color===W;}
-function coord(r,c){return FILES[c]+(10-r);}
+function coord(r,c){return FILES[c]+(9-r);}
 
 // Square colours
 function sqBaseColor(r,c){
-  if((r===1||r===8)&&c===2)return'#1a3a55';
-  if((r===1||r===8)&&c===7)return'#4a2200';
+  if((r===1||r===7)&&c===2)return'#1a3a55'; // Blue: Spectre home
+  if((r===1||r===7)&&c===6)return'#4a2200'; // Orange: Phoenix home
   return(r+c)%2===0?'#d4bc8c':'#7a6248';
 }
 
@@ -136,23 +138,22 @@ function sqBaseColor(r,c){
 let G; // game state object
 
 function makeBoard(){
-  // Returns 10×10 array of {type,color,moved?} or null
-  const b=Array.from({length:10},()=>Array(10).fill(null));
-  const backRank=['T','P','C','L','D','K','L','C','P','T'];
-  // Black back rank row 0
-  for(let c=0;c<10;c++) b[0][c]={type:backRank[c],color:B,moved:false};
-  // Black spectre row 1, col 2; Phoenix row 1, col 7
+  const b=Array.from({length:9},()=>Array(9).fill(null));
+  const backRank=['T','P','L','D','K','X','L','P','T'];
+  for(let c=0;c<9;c++){
+    b[0][c]={type:backRank[c],color:B,moved:false};
+    if(backRank[c]==='X')b[0][c].absorbed=[];
+  }
   b[1][2]={type:'S',color:B,moved:false};
-  b[1][7]={type:'F',color:B,moved:false};
-  // Black pawns row 2
-  for(let c=0;c<10;c++) b[2][c]={type:'p',color:B,moved:false};
-  // White pawns row 7
-  for(let c=0;c<10;c++) b[7][c]={type:'p',color:W,moved:false};
-  // White spectre row 8, col 2; Phoenix row 8, col 7
-  b[8][2]={type:'S',color:W,moved:false};
-  b[8][7]={type:'F',color:W,moved:false};
-  // White back rank row 9
-  for(let c=0;c<10;c++) b[9][c]={type:backRank[c],color:W,moved:false};
+  b[1][6]={type:'F',color:B,moved:false};
+  for(let c=0;c<9;c++) b[2][c]={type:'p',color:B,moved:false};
+  for(let c=0;c<9;c++) b[6][c]={type:'p',color:W,moved:false};
+  b[7][2]={type:'S',color:W,moved:false};
+  b[7][6]={type:'F',color:W,moved:false};
+  for(let c=0;c<9;c++){
+    b[8][c]={type:backRank[c],color:W,moved:false};
+    if(backRank[c]==='X')b[8][c].absorbed=[];
+  }
   return b;
 }
 
@@ -161,8 +162,6 @@ function newGame(){
     board: makeBoard(),
     turn: W,
     round: 1,
-    // en passant: {r,c} of capturable pawn or null
-    ep: null,
     // Spectre state per colour
     spectre:{
       [W]:{offBoard:false,turnsLeft:0},
@@ -226,26 +225,17 @@ function pseudoMoves(board,r,c,ep,spectre,castling,vanguard){
   };
 
   if(type==='p'){
-    const dir=color===W?-1:1; // white moves up (decreasing row), black moves down
-    const startRow=color===W?7:2;
+    const dir=color===W?-1:1;
+    const startRow=color===W?6:2;
     const isVanguard=vanguard.has(`${r},${c}`);
-    // forward
     if(inBounds(r+dir,c)&&!board[r+dir][c]){
       moves.push({r:r+dir,c});
-      // double push from start
-      if(r===startRow&&!board[r+2*dir][c])moves.push({r:r+2*dir,c,special:'ep-able'});
+      if(r===startRow&&!board[r+2*dir][c])moves.push({r:r+2*dir,c});
     }
-    // captures (diagonal forward)
     for(const dc of[-1,1]){
       const tr=r+dir,tc=c+dc;
-      if(inBounds(tr,tc)){
-        const t=board[tr][tc];
-        if(t&&t.color===enemy)moves.push({r:tr,c:tc});
-        // en passant
-        if(ep&&tr===ep.r&&tc===ep.c)moves.push({r:tr,c:tc,special:'ep'});
-      }
+      if(inBounds(tr,tc)){const t=board[tr][tc];if(t&&t.color===enemy)moves.push({r:tr,c:tc});}
     }
-    // vanguard: backward moves
     if(isVanguard){
       const bdir=-dir;
       if(inBounds(r+bdir,c)&&!board[r+bdir][c])moves.push({r:r+bdir,c});
@@ -274,35 +264,72 @@ function pseudoMoves(board,r,c,ep,spectre,castling,vanguard){
     for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){
       if(canMove(r+dr,c+dc))moves.push({r:r+dr,c:c+dc});
     }
-    // castling
+    // castling (King at col 4, Rooks at col 0 / col 8)
     if(!p.moved&&castling[color]){
-      const row=color===W?9:0;
+      const row=color===W?8:0;
       if(castling[color].kside){
-        // king at col 5, rook at col 9; king moves 3 squares to col 8
-        if(!board[row][6]&&!board[row][7]&&!board[row][8]&&board[row][9]&&board[row][9].type==='T'&&!board[row][9].moved)
-          moves.push({r:row,c:8,special:'castle-k'});
+        // king col4→col7, rook col8→col6; path 5,6,7 must be clear
+        if(!board[row][5]&&!board[row][6]&&!board[row][7]&&board[row][8]&&board[row][8].type==='T'&&!board[row][8].moved)
+          moves.push({r:row,c:7,special:'castle-k'});
       }
       if(castling[color].qside){
-        // king at col 5, rook at col 0; king moves 3 squares to col 2
-        if(!board[row][4]&&!board[row][3]&&!board[row][2]&&!board[row][1]&&board[row][0]&&board[row][0].type==='T'&&!board[row][0].moved)
-          moves.push({r:row,c:2,special:'castle-q'});
+        // king col4→col1, rook col0→col2; path 1,2,3 must be clear
+        if(!board[row][3]&&!board[row][2]&&!board[row][1]&&board[row][0]&&board[row][0].type==='T'&&!board[row][0].moved)
+          moves.push({r:row,c:1,special:'castle-q'});
       }
     }
   }
-  if(type==='C'){
-    // Knight moves
-    for(const[dr,dc]of[[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]]){
+  if(type==='X'){
+    const absorbed=p.absorbed||[];
+    // Base: King movement (1 square any direction)
+    for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){
       if(canMove(r+dr,c+dc))moves.push({r:r+dr,c:c+dc});
     }
-    // Diagonal moves up to 3 squares
-    for(const[dr,dc]of[[1,1],[1,-1],[-1,1],[-1,-1]]){
-      let tr=r+dr,tc=c+dc;
-      for(let i=0;i<3;i++){
-        if(!inBounds(tr,tc))break;
-        const t=board[tr][tc];
-        if(!t){moves.push({r:tr,c:tc});}
-        else{if(t.color===enemy)moves.push({r:tr,c:tc});break;}
-        tr+=dr;tc+=dc;
+    // Absorbed Knight
+    if(absorbed.includes('P')){
+      for(const[dr,dc]of[[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]]){
+        if(canMove(r+dr,c+dc))moves.push({r:r+dr,c:c+dc});
+      }
+    }
+    // Absorbed Rook (orthogonal slides)
+    if(absorbed.includes('T')||absorbed.includes('D')){
+      for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]])addSlide(dr,dc);
+    }
+    // Absorbed Bishop (diagonal slides)
+    if(absorbed.includes('L')||absorbed.includes('D')){
+      for(const[dr,dc]of[[1,1],[1,-1],[-1,1],[-1,-1]])addSlide(dr,dc);
+    }
+    // Absorbed Pawn (diagonal forward captures)
+    if(absorbed.includes('p')){
+      const pdir=color===W?-1:1;
+      for(const dc of[-1,1]){
+        const tr=r+pdir,tc=c+dc;
+        if(inBounds(tr,tc)){const t=board[tr][tc];if(t&&t.color===enemy)moves.push({r:tr,c:tc});}
+      }
+    }
+    // Absorbed Spectre (1-2 square non-jumping + shadow infiltration)
+    if(absorbed.includes('S')){
+      for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){
+        const tr1=r+dr,tc1=c+dc;
+        if(!inBounds(tr1,tc1))continue;
+        const t1=board[tr1][tc1];
+        if(!t1){
+          moves.push({r:tr1,c:tc1});
+          const tr2=r+2*dr,tc2=c+2*dc;
+          if(inBounds(tr2,tc2)){
+            const t2=board[tr2][tc2];
+            if(!t2)moves.push({r:tr2,c:tc2});
+            else if(t2.color===enemy){
+              const tr3=r+3*dr,tc3=c+3*dc;
+              if(inBounds(tr3,tc3)&&!board[tr3][tc3])
+                moves.push({r:tr2,c:tc2,special:'shadow',land:{r:tr3,c:tc3}});
+            }
+          }
+        } else if(t1.color===enemy){
+          const tr2=r+2*dr,tc2=c+2*dc;
+          if(inBounds(tr2,tc2)&&!board[tr2][tc2])
+            moves.push({r:tr1,c:tc1,special:'shadow',land:{r:tr2,c:tc2}});
+        }
       }
     }
   }
@@ -373,56 +400,76 @@ function inCheck(board,color,ep,spectre,castling,vanguard){
   return isAttacked(board,k.r,k.c,opp(color),ep,spectre,castling,vanguard);
 }
 
-// Apply a move on a copy of the board, return {board,ep,castling}
+// Apply a move on a copy of the board, return {board,ep,castling,meltdown?}
 function applyMoveToBoard(board,from,to,special,ep,castling,vanguard){
-  const nb=board.map(row=>row.map(p=>p?{...p}:null));
-  const p={...nb[from.r][from.c]};
+  // Deep copy: preserve absorbed arrays on Robot pieces
+  const nb=board.map(row=>row.map(p=>{
+    if(!p)return null;
+    const cp={...p};
+    if(cp.absorbed)cp.absorbed=[...cp.absorbed];
+    return cp;
+  }));
+  const p=nb[from.r][from.c];
   p.moved=true;
+  if(p.absorbed)p.absorbed=[...p.absorbed];
 
-  if(special==='ep'){
-    // remove captured pawn
-    const capRow=from.r;
-    nb[capRow][to.c]=null;
-  }
+  // Shadow Infiltration (Robot or Spectre)
   if(special==='shadow'){
-    // capture piece at to (intermediate), land at to.land
+    const cap=nb[to.r][to.c];
+    if(p.type==='X'&&cap&&cap.type==='F'){
+      // Meltdown via shadow — both destroyed, Phoenix loses all lives
+      nb[from.r][from.c]=null;
+      nb[to.r][to.c]=null;
+      return{board:nb,ep:null,castling,meltdown:true};
+    }
+    if(p.type==='X'&&cap&&!p.absorbed.includes(cap.type))p.absorbed.push(cap.type);
     nb[from.r][from.c]=null;
-    nb[to.r][to.c]=null; // remove captured
+    nb[to.r][to.c]=null;
     nb[to.land.r][to.land.c]=p;
     return{board:nb,ep:null,castling};
   }
+  // Castle kingside: king col4→7, rook col8→6
   if(special==='castle-k'){
     const row=from.r;
-    nb[row][5]=null;nb[row][9]=null;
-    nb[row][8]={...p};
-    nb[row][7]={type:'T',color:p.color,moved:true};
+    nb[row][4]=null;nb[row][8]=null;
+    nb[row][7]={...p};
+    nb[row][6]={type:'T',color:p.color,moved:true};
     return{board:nb,ep:null,castling:{...castling,[p.color]:{kside:false,qside:false}}};
   }
+  // Castle queenside: king col4→1, rook col0→2
   if(special==='castle-q'){
     const row=from.r;
-    nb[row][5]=null;nb[row][0]=null;
-    nb[row][2]={...p};
-    nb[row][3]={type:'T',color:p.color,moved:true};
+    nb[row][4]=null;nb[row][0]=null;
+    nb[row][1]={...p};
+    nb[row][2]={type:'T',color:p.color,moved:true};
     return{board:nb,ep:null,castling:{...castling,[p.color]:{kside:false,qside:false}}};
   }
+
+  // Normal move / capture
+  const captured=nb[to.r][to.c];
+
+  // Robot-Phoenix meltdown (normal capture)
+  if(p.type==='X'&&captured&&captured.type==='F'){
+    nb[from.r][from.c]=null;
+    nb[to.r][to.c]=null;
+    return{board:nb,ep:null,castling,meltdown:true};
+  }
+  // Robot absorption (normal capture of non-Phoenix)
+  if(p.type==='X'&&captured&&!p.absorbed.includes(captured.type))p.absorbed.push(captured.type);
 
   nb[from.r][from.c]=null;
   nb[to.r][to.c]=p;
 
-  let newEp=null;
-  if(special==='ep-able') newEp={r:(from.r+to.r)/2,c:from.c};
-
-  // Update castling rights if king or rook moved
+  // Update castling rights
   let newCastling=castling;
   if(p.type==='K'){
     newCastling={...castling,[p.color]:{kside:false,qside:false}};
   } else if(p.type==='T'){
-    const row=p.color===W?9:0;
-    if(from.r===row&&from.c===0) newCastling={...castling,[p.color]:{...castling[p.color],qside:false}};
-    if(from.r===row&&from.c===9) newCastling={...castling,[p.color]:{...castling[p.color],kside:false}};
+    const row=p.color===W?8:0;
+    if(from.r===row&&from.c===0)newCastling={...castling,[p.color]:{...castling[p.color],qside:false}};
+    if(from.r===row&&from.c===8)newCastling={...castling,[p.color]:{...castling[p.color],kside:false}};
   }
-
-  return{board:nb,ep:newEp,castling:newCastling};
+  return{board:nb,ep:null,castling:newCastling};
 }
 
 // Legal moves (filtered for check)
@@ -455,8 +502,8 @@ canvas.width=CW;canvas.height=CH;
 
 // Piece Unicode symbols
 const PIECE_GLYPHS={
-  [W]:{K:'♔',D:'♕',T:'♖',L:'♗',P:'♘',C:'⚔',S:'👁',F:'🔥',p:'♙'},
-  [B]:{K:'♚',D:'♛',T:'♜',L:'♝',P:'♞',C:'⚔',S:'👁',F:'🔥',p:'♟'},
+  [W]:{K:'♔',D:'♕',T:'♖',L:'♗',P:'♘',X:'🤖',S:'👁',F:'🔥',p:'♙'},
+  [B]:{K:'♚',D:'♛',T:'♜',L:'♝',P:'♞',X:'🤖',S:'👁',F:'🔥',p:'♟'},
 };
 
 function drawBoard(){
@@ -496,7 +543,7 @@ function drawBoard(){
   ctx.textAlign='left';ctx.textBaseline='top';
   for(let r=0;r<N;r++){
     ctx.fillStyle='rgba(0,0,0,0.5)';
-    ctx.fillText(10-r,2,r*SQ+2);
+    ctx.fillText(9-r,2,r*SQ+2);
   }
   ctx.textAlign='right';ctx.textBaseline='bottom';
   for(let c=0;c<N;c++){
@@ -523,6 +570,12 @@ function drawBoard(){
       ctx.font=`${SQ*0.2}px sans-serif`;
       ctx.fillStyle='#3fb950';
       ctx.fillText('V',c*SQ+SQ-8,r*SQ+8);
+    }
+    // Robot absorbed count badge
+    if(p.type==='X'&&p.absorbed&&p.absorbed.length>0){
+      ctx.font=`bold ${SQ*0.22}px sans-serif`;
+      ctx.fillStyle='#c9a84c';
+      ctx.fillText(`+${p.absorbed.length}`,c*SQ+SQ-9,r*SQ+10);
     }
   }
 
@@ -558,6 +611,20 @@ function updatePanels(){
   const bs=G.spectre[B];
   document.getElementById('stat-ws').textContent=ws.offBoard?`off-board (${ws.turnsLeft}T left)`:'on board';
   document.getElementById('stat-bs').textContent=bs.offBoard?`off-board (${bs.turnsLeft}T left)`:'on board';
+
+  // Robot absorbed pieces
+  function robotStatus(color){
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+      const p=G.board[r][c];
+      if(p&&p.type==='X'&&p.color===color){
+        const abs=p.absorbed||[];
+        return abs.length?abs.map(t=>PNAMES[t]).join(', '):'base King only';
+      }
+    }
+    return 'destroyed';
+  }
+  document.getElementById('stat-wr').textContent=robotStatus(W);
+  document.getElementById('stat-br').textContent=robotStatus(B);
 
   // Show Fire Tribunal button if eligible
   const fireElig=canFireTribunal(W);
@@ -627,8 +694,8 @@ function logMove(msg,special=false){
 //  PROMOTION DIALOG
 // ═══════════════════════════════════════════════════════
 function showPromoDialog(r,c,color,callback){
-  const opts=['D','T','L','P','C','S'];
-  const names={D:'Queen',T:'Rook',L:'Bishop',P:'Knight',C:'Paladin',S:'Spectre'};
+  const opts=['D','T','L','P','X','S'];
+  const names={D:'Queen',T:'Rook',L:'Bishop',P:'Knight',X:'Robot',S:'Spectre'};
   const box=document.getElementById('promo-btns');
   box.innerHTML='';
   for(const t of opts){
@@ -648,21 +715,24 @@ function showPromoDialog(r,c,color,callback){
 //  EXECUTE A MOVE (human or bot)
 // ═══════════════════════════════════════════════════════
 function executeMove(from,to,rawMove,promoType){
-  const{board,ep,castling,vanguard,spectre,phoenix}=G;
+  const{board,castling,vanguard,spectre,phoenix}=G;
   const p=board[from.r][from.c];
   if(!p)return;
   const color=p.color;
 
   // Apply move
-  let{board:nb,ep:nep,castling:nc}=applyMoveToBoard(board,from,{r:rawMove.r,c:rawMove.c,land:rawMove.land},rawMove.special,ep,castling,vanguard);
+  let{board:nb,ep:nep,castling:nc,meltdown}=applyMoveToBoard(board,from,{r:rawMove.r,c:rawMove.c,land:rawMove.land},rawMove.special,null,castling,vanguard);
 
-  // Handle shadow infiltration landing
-  if(rawMove.special==='shadow'){
-    // board already has the piece on land square from applyMoveToBoard
-    // nothing extra needed
+  // Robot-Phoenix Meltdown: both pieces destroyed, Phoenix permanently removed
+  if(meltdown){
+    const ec=opp(color);
+    G.phoenix[ec]={lives:0,solarRound:0,permanent:true};
+    G.board=nb;G.castling=nc;
+    logMove(`${color==='white'?'W':'B'}: Robot ${coord(from.r,from.c)} captures Phoenix — MELTDOWN! Both destroyed. ${PNAMES['F']} permanently eliminated!`,true);
+    afterMove(color,nb,null,nc);
+    renderAll();
+    return;
   }
-
-  // En passant - captured pawn removal already done in applyMoveToBoard
 
   let moveStr=`${color==='white'?'W':'B'}: ${PNAMES[p.type]} ${coord(from.r,from.c)}→${coord(to.r,to.c)}`;
   let specialMsg=null;
@@ -683,14 +753,14 @@ function executeMove(from,to,rawMove,promoType){
         specialMsg=`💥 ${col} Phoenix captured! Lives left: ${phState.lives}`;
         if(phState.lives>0){
           // respawn
-          const hr=col===W?8:1,hc=7;
+          const hr=col===W?7:1,hc=6;
           const occupant=nb[hr][hc];
           if(occupant){
             // Crash rule: occupying piece destroyed; if own King → that side loses
             if(occupant.type==='K'){
               specialMsg+=` — CRASH RULE: ${col} King destroyed! ${opp(col)} wins!`;
               nb[hr][hc]={type:'F',color:col,moved:false};
-              G.board=nb;G.ep=nep;G.castling=nc;
+              G.board=nb;G.castling=nc;
               endGame(opp(col));
               logMove(moveStr);
               if(specialMsg)logMove(specialMsg,true);
@@ -705,7 +775,7 @@ function executeMove(from,to,rawMove,promoType){
         } else {
           // permanently removed
           specialMsg+=` — Phoenix permanently eliminated!`;
-          nb[hr]&&(nb[hr][7]=null); // ensure removed
+          nb[hr]&&(nb[hr][6]=null); // ensure removed
         }
       }
     }
@@ -713,26 +783,22 @@ function executeMove(from,to,rawMove,promoType){
 
   // Pawn promotion
   if(p.type==='p'){
-    const promoRow=color===W?0:9;
+    const promoRow=color===W?0:8;
     if(to.r===promoRow){
       if(promoType){
-        nb[to.r][to.c]={type:promoType,color,moved:true};
-        if(promoType==='F'){
-          // New phoenix on first life
-          G.phoenix[color]={lives:3,solarRound:G.round,permanent:false};
-        }
-        if(promoType==='S'){
-          // Spectre placed on board
-          G.spectre[color]={offBoard:false,turnsLeft:0};
-        }
+        const pp={type:promoType,color,moved:true};
+        if(promoType==='X')pp.absorbed=[];
+        nb[to.r][to.c]=pp;
+        if(promoType==='S') G.spectre[color]={offBoard:false,turnsLeft:0};
         moveStr+=` → ${PNAMES[promoType]}`;
         specialMsg=(specialMsg||'')+` Grand Promotion: ${PNAMES[promoType]}!`;
       } else {
         // Need to ask (human turn only)
-        G.board=nb;G.ep=nep;G.castling=nc;
+        G.board=nb;G.castling=nc;
         showPromoDialog(to.r,to.c,color,(chosen)=>{
-          nb[to.r][to.c]={type:chosen,color,moved:true};
-          if(chosen==='F') G.phoenix[color]={lives:3,solarRound:G.round,permanent:false};
+          const cp={type:chosen,color,moved:true};
+          if(chosen==='X')cp.absorbed=[];
+          nb[to.r][to.c]=cp;
           if(chosen==='S') G.spectre[color]={offBoard:false,turnsLeft:0};
           moveStr+=` → ${PNAMES[chosen]}`;
           logMove(moveStr);
@@ -745,17 +811,17 @@ function executeMove(from,to,rawMove,promoType){
     }
   }
 
-  // Vanguard Pawn upgrade: pawn lands on enemy blessed square
+  // Vanguard Pawn upgrade: pawn lands on enemy blessed square (9×9 layout)
   if(p.type==='p'){
-    const enemyBlue=color===W?{r:1,c:2}:{r:8,c:2};
-    const enemyOrange=color===W?{r:1,c:7}:{r:8,c:7};
+    const enemyBlue =color===W?{r:1,c:2}:{r:7,c:2};
+    const enemyOrange=color===W?{r:1,c:6}:{r:7,c:6};
     if((to.r===enemyBlue.r&&to.c===enemyBlue.c)||(to.r===enemyOrange.r&&to.c===enemyOrange.c)){
       G.vanguard.add(`${to.r},${to.c}`);
       specialMsg=(specialMsg||'')+` Pawn upgraded to Vanguard!`;
     }
   }
 
-  G.board=nb;G.ep=nep;G.castling=nc;
+  G.board=nb;G.castling=nc;
 
   logMove(moveStr);
   if(specialMsg)logMove(specialMsg,true);
@@ -763,7 +829,7 @@ function executeMove(from,to,rawMove,promoType){
   afterMove(color,nb,nep,nc);
 }
 
-function afterMove(color,board,ep,castling){
+function afterMove(color,board,_ep,castling){
   // Decrement spectre off-board counter for the player who just moved
   const sc=G.spectre[color];
   if(sc.offBoard){
@@ -798,10 +864,10 @@ function afterMove(color,board,ep,castling){
   G.legalMoves=[];
 
   // Check game conditions
-  const nextLegal=legalMoves(G.board,G.turn,G.ep,G.spectre,G.castling,G.vanguard);
+  const nextLegal=legalMoves(G.board,G.turn,null,G.spectre,G.castling,G.vanguard);
 
   if(nextLegal.length===0){
-    if(inCheck(G.board,G.turn,G.ep,G.spectre,G.castling,G.vanguard)){
+    if(inCheck(G.board,G.turn,null,G.spectre,G.castling,G.vanguard)){
       endGame(opp(G.turn));
     } else {
       endGame(null); // stalemate
@@ -844,7 +910,7 @@ function afterMove(color,board,ep,castling){
     setStatus('Bot is thinking…','info');
     setTimeout(()=>botMove(),200);
   } else if(!G.gameOver){
-    if(inCheck(G.board,W,G.ep,G.spectre,G.castling,G.vanguard)){
+    if(inCheck(G.board,W,null,G.spectre,G.castling,G.vanguard)){
       setStatus('You are in CHECK! Defend your King.','check');
     } else {
       // Check if spectre must return
@@ -934,7 +1000,7 @@ canvas.addEventListener('click',e=>{
   const p=G.board[r][c];
   if(p&&p.color===W){
     G.selected={r,c};
-    const all=legalMoves(G.board,W,G.ep,G.spectre,G.castling,G.vanguard);
+    const all=legalMoves(G.board,W,null,G.spectre,G.castling,G.vanguard);
     G.legalMoves=all.filter(m=>m.from.r===r&&m.from.c===c).map(m=>m.raw);
     renderAll();
   }
@@ -946,24 +1012,26 @@ canvas.addEventListener('click',e=>{
 function evaluate(board,vanguard,spectre,phoenix){
   let score=0;
   const pst={
-    p:[0,0,0,0,0,0,0,0,0,0,
-       0,5,5,5,5,5,5,5,5,0,
-       0,5,10,10,10,10,10,10,5,0,
-       0,5,10,20,20,20,20,10,5,0,
-       0,5,10,20,25,25,20,10,5,0,
-       0,5,10,20,25,25,20,10,5,0,
-       0,5,10,10,10,10,10,10,5,0,
-       0,5,5,5,5,5,5,5,5,0,
-       0,0,0,0,0,0,0,0,0,0,
-       0,0,0,0,0,0,0,0,0,0],
+    p:[0,0,0,0,0,0,0,0,0,
+       0,5,5,5,5,5,5,5,0,
+       0,5,10,15,15,15,10,5,0,
+       0,5,10,20,20,20,10,5,0,
+       0,5,10,20,25,20,10,5,0,
+       0,5,10,20,20,20,10,5,0,
+       0,5,10,15,15,15,10,5,0,
+       0,5,5,5,5,5,5,5,0,
+       0,0,0,0,0,0,0,0,0],
   };
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){
     const p=board[r][c];
     if(!p)continue;
     const v=(PIECE_VALUE[p.type]||0)*100;
-    const ps=p.type==='p'?(pst.p[r*N+c]||0):0;
+    const ps=p.type==='p'?(pst.p[r*9+c]||0):0;
     const sign=p.color===B?1:-1;
     score+=sign*(v+ps);
+    if(p.type==='X'&&p.absorbed){
+      for(const t of p.absorbed)score+=sign*(PIECE_VALUE[t]||0)*50;
+    }
   }
   // Phoenix bonus for solar countdown
   for(const col of[W,B]){
@@ -980,19 +1048,19 @@ function evaluate(board,vanguard,spectre,phoenix){
 function botPickMove(board,ep,castling,vanguard,spectre,phoenix,depth,alpha,beta,maximizing){
   if(depth===0) return evaluate(board,vanguard,spectre,phoenix);
   const color=maximizing?B:W;
-  const mvs=legalMoves(board,color,ep,spectre,castling,vanguard);
+  const mvs=legalMoves(board,color,null,spectre,castling,vanguard);
   if(mvs.length===0){
-    if(inCheck(board,color,ep,spectre,castling,vanguard))
+    if(inCheck(board,color,null,spectre,castling,vanguard))
       return maximizing?-9000+depth:9000-depth;
     return 0; // stalemate
   }
 
   let best=maximizing?-Infinity:Infinity;
   for(const mv of mvs){
-    const{board:nb,ep:nep,castling:nc}=applyMoveToBoard(board,mv.from,{r:mv.raw.r,c:mv.raw.c,land:mv.raw.land},mv.raw.special,ep,castling,vanguard);
-    // simplified phoenix respawn for eval
+    const{board:nb,castling:nc,meltdown:md}=applyMoveToBoard(board,mv.from,{r:mv.raw.r,c:mv.raw.c,land:mv.raw.land},mv.raw.special,null,castling,vanguard);
     const nph={[W]:{...phoenix[W]},[B]:{...phoenix[B]}};
-    const val=botPickMove(nb,nep,nc,vanguard,spectre,nph,depth-1,alpha,beta,!maximizing);
+    if(md)nph[opp(maximizing?B:W)]={lives:0,solarRound:0,permanent:true};
+    const val=botPickMove(nb,null,nc,vanguard,spectre,nph,depth-1,alpha,beta,!maximizing);
     if(maximizing){best=Math.max(best,val);alpha=Math.max(alpha,val);}
     else{best=Math.min(best,val);beta=Math.min(beta,val);}
     if(beta<=alpha)break;
@@ -1021,7 +1089,7 @@ function botMove(){
     // Otherwise skip spectre return, make normal move
   }
 
-  const mvs=legalMoves(G.board,B,G.ep,G.spectre,G.castling,G.vanguard);
+  const mvs=legalMoves(G.board,B,null,G.spectre,G.castling,G.vanguard);
   if(mvs.length===0)return;
 
   // Blunder: 28% chance play random move instead of best
@@ -1033,9 +1101,10 @@ function botMove(){
   } else {
     let bestVal=-Infinity,bestMoves=[];
     for(const mv of mvs){
-      const{board:nb,ep:nep,castling:nc}=applyMoveToBoard(G.board,mv.from,{r:mv.raw.r,c:mv.raw.c,land:mv.raw.land},mv.raw.special,G.ep,G.castling,G.vanguard);
+      const{board:nb,castling:nc,meltdown:md}=applyMoveToBoard(G.board,mv.from,{r:mv.raw.r,c:mv.raw.c,land:mv.raw.land},mv.raw.special,null,G.castling,G.vanguard);
       const nph={[W]:{...G.phoenix[W]},[B]:{...G.phoenix[B]}};
-      const val=botPickMove(nb,nep,nc,G.vanguard,G.spectre,nph,1,-Infinity,Infinity,false);
+      if(md)nph[W]={lives:0,solarRound:0,permanent:true};
+      const val=botPickMove(nb,null,nc,G.vanguard,G.spectre,nph,1,-Infinity,Infinity,false);
       if(val>bestVal){bestVal=val;bestMoves=[mv];}
       else if(val===bestVal)bestMoves.push(mv);
     }
@@ -1044,7 +1113,7 @@ function botMove(){
 
   // Bot promotion: always picks Queen
   const p=G.board[chosen.from.r][chosen.from.c];
-  const promoRow=p&&p.type==='p'&&chosen.to.r===(p.color===B?9:0);
+  const promoRow=p&&p.type==='p'&&chosen.to.r===(p.color===B?8:0);
   executeMove(chosen.from,chosen.to,chosen.raw,promoRow?'D':null);
   renderAll();
   if(!G.gameOver) setStatus(`Your turn (Round ${G.round})`,'info');
