@@ -415,7 +415,7 @@ function legalMoves(board,color,ep,spectre,castling,vanguard){
     const pm=pseudoMoves(board,r,c,ep,spectre,castling,vanguard);
     for(const m of pm){
       const to=m.special==='shadow'?{r:m.land.r,c:m.land.c}:{r:m.r,c:m.c};
-      const {board:nb}=applyMoveToBoard(board,{r,c},{r:m.r,c:m.c},m.special,ep,castling,vanguard);
+      const {board:nb}=applyMoveToBoard(board,{r,c},{r:m.r,c:m.c,land:m.land},m.special,ep,castling,vanguard);
       if(!inCheck(nb,color,null,spectre,castling,vanguard)){
         moves.push({from:{r,c},to,raw:m});
       }
@@ -627,7 +627,7 @@ function executeMove(from,to,rawMove,promoType){
   const color=p.color;
 
   // Apply move
-  let{board:nb,ep:nep,castling:nc}=applyMoveToBoard(board,from,{r:rawMove.r,c:rawMove.c},rawMove.special,ep,castling,vanguard);
+  let{board:nb,ep:nep,castling:nc}=applyMoveToBoard(board,from,{r:rawMove.r,c:rawMove.c,land:rawMove.land},rawMove.special,ep,castling,vanguard);
 
   // Handle shadow infiltration landing
   if(rawMove.special==='shadow'){
@@ -950,6 +950,7 @@ function evaluate(board,vanguard,spectre,phoenix){
 }
 
 function botPickMove(board,ep,castling,vanguard,spectre,phoenix,depth,alpha,beta,maximizing){
+  if(depth===0) return evaluate(board,vanguard,spectre,phoenix);
   const color=maximizing?B:W;
   const mvs=legalMoves(board,color,ep,spectre,castling,vanguard);
   if(mvs.length===0){
@@ -957,11 +958,10 @@ function botPickMove(board,ep,castling,vanguard,spectre,phoenix,depth,alpha,beta
       return maximizing?-9000+depth:9000-depth;
     return 0; // stalemate
   }
-  if(depth===0) return evaluate(board,vanguard,spectre,phoenix);
 
   let best=maximizing?-Infinity:Infinity;
   for(const mv of mvs){
-    const{board:nb,ep:nep,castling:nc}=applyMoveToBoard(board,mv.from,{r:mv.raw.r,c:mv.raw.c},mv.raw.special,ep,castling,vanguard);
+    const{board:nb,ep:nep,castling:nc}=applyMoveToBoard(board,mv.from,{r:mv.raw.r,c:mv.raw.c,land:mv.raw.land},mv.raw.special,ep,castling,vanguard);
     // simplified phoenix respawn for eval
     const nph={[W]:{...phoenix[W]},[B]:{...phoenix[B]}};
     const val=botPickMove(nb,nep,nc,vanguard,spectre,nph,depth-1,alpha,beta,!maximizing);
@@ -1005,9 +1005,9 @@ function botMove(){
   } else {
     let bestVal=-Infinity,bestMoves=[];
     for(const mv of mvs){
-      const{board:nb,ep:nep,castling:nc}=applyMoveToBoard(G.board,mv.from,{r:mv.raw.r,c:mv.raw.c},mv.raw.special,G.ep,G.castling,G.vanguard);
+      const{board:nb,ep:nep,castling:nc}=applyMoveToBoard(G.board,mv.from,{r:mv.raw.r,c:mv.raw.c,land:mv.raw.land},mv.raw.special,G.ep,G.castling,G.vanguard);
       const nph={[W]:{...G.phoenix[W]},[B]:{...G.phoenix[B]}};
-      const val=botPickMove(nb,nep,nc,G.vanguard,G.spectre,nph,2,-Infinity,Infinity,false);
+      const val=botPickMove(nb,nep,nc,G.vanguard,G.spectre,nph,1,-Infinity,Infinity,false);
       if(val>bestVal){bestVal=val;bestMoves=[mv];}
       else if(val===bestVal)bestMoves.push(mv);
     }
