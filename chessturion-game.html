@@ -46,6 +46,11 @@ h1{font-size:1.6rem;letter-spacing:6px;color:#c9a84c;padding:18px 0 4px;text-tra
 #fire-total{color:#f85149;font-size:0.9rem;margin:8px 0;}
 #fire-confirm{background:#f85149;color:#fff;border:none;border-radius:6px;padding:10px 24px;font-size:0.9rem;cursor:pointer;margin-top:8px;}
 #fire-cancel{background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;padding:8px 16px;font-size:0.85rem;cursor:pointer;margin-top:6px;}
+#spectre-tray{min-height:48px;display:flex;align-items:center;justify-content:center;margin-top:6px;}
+#spectre-token{display:none;background:#0d1e2e;border:2px dashed #79c0ff;border-radius:10px;padding:9px 22px;cursor:grab;color:#79c0ff;font-size:0.95rem;user-select:none;transition:opacity 0.15s,transform 0.1s;}
+#spectre-token:active{cursor:grabbing;}
+#spectre-token.dragging{opacity:0.45;transform:scale(0.95);}
+#board-canvas.drag-over{outline:3px solid #79c0ff;outline-offset:-3px;}
 </style>
 </head>
 <body>
@@ -55,6 +60,11 @@ h1{font-size:1.6rem;letter-spacing:6px;color:#c9a84c;padding:18px 0 4px;text-tra
 <div id="game-area">
 <div id="board-wrap">
   <canvas id="board-canvas"></canvas>
+  <div id="spectre-tray">
+    <div id="spectre-token" draggable="true">
+      👁 <span id="spectre-turns"></span>
+    </div>
+  </div>
 </div>
 <div style="display:flex;flex-direction:column;gap:12px;">
   <div class="panel">
@@ -65,7 +75,7 @@ h1{font-size:1.6rem;letter-spacing:6px;color:#c9a84c;padding:18px 0 4px;text-tra
     <div class="stat-row"><span>White Spectre</span><b id="stat-ws">on board</b></div>
     <div class="stat-row"><span>Black Spectre</span><b id="stat-bs">on board</b></div>
     <button class="btn" id="btn-fire" style="display:none;background:#3d1f1f;border-color:#f85149;color:#f85149;">Declare Fire Tribunal</button>
-    <button class="btn" id="btn-spectre">Return Spectre (phase shift)</button>
+    <button class="btn" id="btn-spectre" style="display:none;">Phase Shift (remove Spectre)</button>
     <button class="btn danger" id="btn-new">New Game</button>
   </div>
   <div class="panel">
@@ -553,14 +563,22 @@ function updatePanels(){
   const fireElig=canFireTribunal(W);
   document.getElementById('btn-fire').style.display=fireElig?'block':'none';
 
-  // Return spectre button
+  // Phase Shift button (sends Spectre off-board) + drag-return token
   const ws2=G.spectre[W];
   const spectreBtn=document.getElementById('btn-spectre');
-  if(ws2.offBoard&&G.turn===W&&!G.gameOver){
+  const spectreToken=document.getElementById('spectre-token');
+  const spectreOnBoard=!ws2.offBoard&&ws2.turnsLeft!==-1;
+  if(spectreOnBoard&&G.turn===W&&!G.gameOver){
     spectreBtn.style.display='block';
-    spectreBtn.textContent=`Return Spectre (${ws2.turnsLeft}T left)`;
+    spectreBtn.textContent='Phase Shift (remove Spectre)';
   } else {
     spectreBtn.style.display='none';
+  }
+  if(ws2.offBoard&&G.turn===W&&!G.gameOver){
+    spectreToken.style.display='flex';
+    document.getElementById('spectre-turns').textContent=`Drag Spectre back — ${ws2.turnsLeft}T left`;
+  } else {
+    spectreToken.style.display='none';
   }
 }
 
@@ -1092,13 +1110,53 @@ function showFireModal(){
 }
 
 // ═══════════════════════════════════════════════════════
-//  SPECTRE RETURN BUTTON
+//  SPECTRE PHASE SHIFT BUTTON (send off-board)
 // ═══════════════════════════════════════════════════════
 document.getElementById('btn-spectre').addEventListener('click',()=>{
-  if(G.turn!==W||!G.spectre[W].offBoard)return;
-  returningSpectre=true;
-  setStatus('Click an empty square to return your Spectre','info');
-  G.selected=null;G.legalMoves=[];
+  if(G.turn!==W||G.gameOver)return;
+  const ws=G.spectre[W];
+  if(!ws.offBoard&&ws.turnsLeft!==-1){
+    activatePhaseShift(W);
+    renderAll();
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  SPECTRE DRAG-AND-DROP RETURN
+// ═══════════════════════════════════════════════════════
+const spectreToken=document.getElementById('spectre-token');
+
+spectreToken.addEventListener('dragstart',e=>{
+  e.dataTransfer.setData('text/plain','spectre-return');
+  e.dataTransfer.effectAllowed='move';
+  spectreToken.classList.add('dragging');
+});
+
+spectreToken.addEventListener('dragend',()=>{
+  spectreToken.classList.remove('dragging');
+});
+
+canvas.addEventListener('dragover',e=>{
+  if(!G.spectre[W].offBoard||G.turn!==W||G.gameOver)return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  canvas.classList.add('drag-over');
+});
+
+canvas.addEventListener('dragleave',()=>{
+  canvas.classList.remove('drag-over');
+});
+
+canvas.addEventListener('drop',e=>{
+  e.preventDefault();
+  canvas.classList.remove('drag-over');
+  if(!G.spectre[W].offBoard||G.turn!==W||G.gameOver)return;
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  const dc=Math.floor(x/SQ),dr=Math.floor(y/SQ);
+  if(!inBounds(dr,dc)||G.board[dr][dc])return;
+  returningSpectre=false;
+  returnSpectre(W,dr,dc);
   renderAll();
 });
 
