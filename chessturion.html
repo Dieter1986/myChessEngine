@@ -349,7 +349,7 @@ body {
     <tr><td><strong>T</strong></td><td>Rook</td><td>A1, J1 / A10, J10</td></tr>
     <tr><td><strong>L</strong></td><td>Bishop</td><td>D1, G1 / D10, G10</td></tr>
     <tr><td><strong>P</strong></td><td>Knight</td><td>B1, I1 / B10, I10</td></tr>
-    <tr><td><strong>C</strong></td><td style="color:var(--gold)">Crusader</td><td>C1, H1 / C10, H10</td></tr>
+    <tr><td><strong>C</strong></td><td style="color:var(--gold)">Paladin</td><td>C1, H1 / C10, H10</td></tr>
     <tr><td><strong>S</strong></td><td style="color:var(--blue)">Spectre</td><td><span style="color:var(--blue)">C2 (Blue)</span> / C9</td></tr>
     <tr><td><strong>F</strong></td><td style="color:var(--orange)">Phoenix</td><td><span style="color:var(--orange)">H2 (Orange)</span> / H9</td></tr>
     <tr><td><strong>p</strong></td><td>Pawn</td><td>A3–J3 / A8–J8</td></tr>
@@ -365,11 +365,11 @@ body {
 
     <div class="piece-card">
       <div class="pc-icon">⚔️</div>
-      <h3>The Crusader</h3>
+      <h3>The Paladin</h3>
       <span class="pc-tag tag-gold">C1 · H1 · C10 · H10</span>
       <p><strong>Design:</strong> A robust medieval great helm, carved in the Staunton tradition — wide cylindrical body with a dome crown, T-shaped visor bars across the front.</p>
-      <p><strong>Movement:</strong> A supreme hybrid heavy-cavalry unit that combines the complete legal movement of a <strong>Knight</strong> (L-leap) and a <strong>Bishop</strong> (unlimited diagonal) in a single piece. On any given turn, choose one.</p>
-      <p><strong>Strategic role:</strong> The Crusader's dual mobility makes it one of the most dangerous pieces on the board — it can leap over obstructions like a Knight or sweep long diagonals like a Bishop.</p>
+      <p><strong>Movement:</strong> A hybrid heavy-cavalry unit that combines the complete legal movement of a <strong>Knight</strong> (L-leap) and a <strong>short diagonal slide of up to 3 squares</strong> in a single piece. On any given turn, choose one.</p>
+      <p><strong>Strategic role:</strong> The Paladin's dual mobility makes it a powerful mid-range threat — it can leap over obstructions like a Knight or cut across short diagonals, but its diagonal reach is limited to 3 squares, preventing it from dominating long open lines.</p>
     </div>
 
     <div class="piece-card">
@@ -429,7 +429,7 @@ body {
     <h4>Protocol</h4>
     <ol class="steps" style="margin-top:12px">
       <li><span>At the very <strong>start of your turn</strong>, loudly announce "Fire Tribunal." This consumes your <strong>entire turn</strong> — no other piece may move.</span></li>
-      <li><span>Select and remove your own active pieces totalling <strong>at least 7 points</strong>. Those pieces are permanently gone.</span></li>
+      <li><span>Select and remove your own active pieces totalling <strong>at least 8 points</strong>. Those pieces are permanently gone — if the Queen must be sacrificed, that is the price to pay.</span></li>
       <li><span>The enemy Phoenix is immediately removed from the board and returned to the box. It never returns. Its Solar Countdown and remaining lives are instantly forfeited.</span></li>
       <li><span>Your own Phoenix, if present, is completely unaffected.</span></li>
     </ol>
@@ -446,7 +446,7 @@ body {
 
   <div class="insight">
     <div class="insight-label">Strategic Insight</div>
-    <p>The moment a Phoenix loses its first life, an invisible bounty is placed on its head. From that turn onward, the Phoenix's owner must aggressively eliminate enemy material, reducing the opponent's total available sacrifice value below 7 points — permanently locking out the Fire Tribunal.</p>
+    <p>The moment a Phoenix loses its first life, an invisible bounty is placed on its head. From that turn onward, the Phoenix's owner must aggressively eliminate enemy material, reducing the opponent's total available sacrifice value below 8 points — permanently locking out the Fire Tribunal.</p>
   </div>
 </div>
 
@@ -483,17 +483,17 @@ body {
 
   <hr class="divider">
   <h3 style="color:var(--gold);margin-bottom:12px">Grand Promotion</h3>
-  <p style="color:var(--muted);margin-bottom:16px">When a Pawn reaches the opponent's back rank (row 10 for White / row 1 for Black), it undergoes a Grand Promotion with no limitations on choice.</p>
+  <p style="color:var(--muted);margin-bottom:16px">When a Pawn reaches the opponent's back rank (row 10 for White / row 1 for Black), it undergoes a Grand Promotion.</p>
 
   <div class="rule-box">
-    <h4>Unlimited Roster Choice</h4>
-    <p>The promoting player may choose <strong>any piece from the full Chessturion roster</strong>:</p>
+    <h4>Roster Choice</h4>
+    <p>The promoting player may choose <strong>any piece from the Chessturion roster except the Phoenix</strong>:</p>
     <ul>
       <li>Queen, Rook, Bishop, Knight.</li>
-      <li><strong>The Crusader</strong> — the Knight-Bishop hybrid.</li>
+      <li><strong>The Paladin</strong> — the Knight-diagonal hybrid.</li>
       <li><strong>The Spectre</strong> — the phantom infiltrator.</li>
-      <li><strong>The Phoenix</strong> — begins freshly on its <em>first life</em>, Solar Countdown at 0, granting it full immunity to the Fire Tribunal until it loses that first life.</li>
     </ul>
+    <p style="color:var(--muted);margin-top:10px"><strong>Note:</strong> A Pawn <em>cannot</em> promote into a Phoenix. The Phoenix each side receives at the start of the game is the only one they will ever have.</p>
   </div>
 </div>
 
@@ -506,7 +506,7 @@ body {
     <tr><th>Rule</th><th>10×10 Application</th></tr>
     <tr>
       <td><strong>Castling</strong></td>
-      <td>The King slides two squares toward a Rook (A- or J-file), after which the Rook jumps to the square the King just crossed. Illegal while in check or if any intervening square is occupied.</td>
+      <td>The King slides <strong>three squares</strong> toward a Rook (A- or J-file), after which the Rook jumps to the square the King just crossed. Illegal while in check or if any intervening square is occupied.</td>
     </tr>
     <tr>
       <td><strong>En Passant</strong></td>
@@ -562,7 +562,7 @@ const LAYOUT = [
 ];
 
 const PIECE_NAMES = {
-  T:'Rook', P:'Knight', C:'Crusader', L:'Bishop',
+  T:'Rook', P:'Knight', C:'Paladin', L:'Bishop',
   D:'Queen', K:'King', F:'Phoenix', S:'Spectre', p:'Pawn'
 };
 
@@ -683,7 +683,7 @@ function pKing(wx,wz,ib){
   cyl(wx-0.15,wz,0.032,0.032,0.93,0.97,c.t,8);
   cyl(wx+0.15,wz,0.032,0.032,0.93,0.97,c.t,8);
 }
-function pCrusader(wx,wz,ib){
+function pPaladin(wx,wz,ib){
   const c=pc(ib);pBase(wx,wz,c);
   cyl(wx,wz,0.23,0.22,0.24,0.33,c.d);
   cyl(wx,wz,0.255,0.265,0.33,0.63,c.m);
@@ -707,7 +707,7 @@ function pPhoenix(wx,wz,ib){
   sph(wx,0.86,wz,0.10,c.t);
 }
 
-const DRAWERS={T:pRook,P:pKnight,C:pCrusader,L:pBishop,D:pQueen,K:pKing,F:pPhoenix,S:pSpectre,p:pPawn};
+const DRAWERS={T:pRook,P:pKnight,C:pPaladin,L:pBishop,D:pQueen,K:pKing,F:pPhoenix,S:pSpectre,p:pPawn};
 function isBlackRow(r){return r<=2;}
 
 /* ── hover ────────────────────────────────── */

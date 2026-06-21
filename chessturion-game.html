@@ -86,7 +86,7 @@ h1{font-size:1.6rem;letter-spacing:6px;color:#c9a84c;padding:18px 0 4px;text-tra
 <div id="fire-modal">
 <div id="fire-box">
   <h3>🔥 Fire Tribunal</h3>
-  <p>Select your own pieces to sacrifice totalling <strong style="color:#f85149;">at least 7 points</strong>.<br>The enemy Phoenix is permanently removed.</p>
+  <p>Select your own pieces to sacrifice totalling <strong style="color:#f85149;">at least 8 points</strong>.<br>The enemy Phoenix is permanently removed.</p>
   <div id="fire-pieces"></div>
   <div id="fire-total">Selected: 0 pts</div>
   <button id="fire-confirm" disabled>Execute Tribunal</button><br>
@@ -105,9 +105,9 @@ const W='white', B='black';
 const opp=c=>c===W?B:W;
 
 // piece symbols: uppercase=white, lowercase=black
-// T=Rook P=Knight C=Crusader L=Bishop D=Queen K=King S=Spectre F=Phoenix p/P=Pawn
+// T=Rook P=Knight C=Paladin L=Bishop D=Queen K=King S=Spectre F=Phoenix p/P=Pawn
 const PIECE_VALUE={K:999,D:9,T:5,L:3,P:3,C:7,S:4,F:6,p:1};
-const PNAMES={K:'King',D:'Queen',T:'Rook',L:'Bishop',P:'Knight',C:'Crusader',S:'Spectre',F:'Phoenix',p:'Pawn'};
+const PNAMES={K:'King',D:'Queen',T:'Rook',L:'Bishop',P:'Knight',C:'Paladin',S:'Spectre',F:'Phoenix',p:'Pawn'};
 
 function sym(piece){return piece?piece.type+(piece.color===W?piece.type.toUpperCase():piece.type.toLowerCase()):'.';}
 function isWhitePiece(p){return p&&p.color===W;}
@@ -268,14 +268,14 @@ function pseudoMoves(board,r,c,ep,spectre,castling,vanguard){
     if(!p.moved&&castling[color]){
       const row=color===W?9:0;
       if(castling[color].kside){
-        // king at col 5, rook at col 9; king moves to col 7
+        // king at col 5, rook at col 9; king moves 3 squares to col 8
         if(!board[row][6]&&!board[row][7]&&!board[row][8]&&board[row][9]&&board[row][9].type==='T'&&!board[row][9].moved)
-          moves.push({r:row,c:7,special:'castle-k'});
+          moves.push({r:row,c:8,special:'castle-k'});
       }
       if(castling[color].qside){
-        // king at col 5, rook at col 0; king moves to col 3
+        // king at col 5, rook at col 0; king moves 3 squares to col 2
         if(!board[row][4]&&!board[row][3]&&!board[row][2]&&!board[row][1]&&board[row][0]&&board[row][0].type==='T'&&!board[row][0].moved)
-          moves.push({r:row,c:3,special:'castle-q'});
+          moves.push({r:row,c:2,special:'castle-q'});
       }
     }
   }
@@ -284,8 +284,17 @@ function pseudoMoves(board,r,c,ep,spectre,castling,vanguard){
     for(const[dr,dc]of[[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]]){
       if(canMove(r+dr,c+dc))moves.push({r:r+dr,c:c+dc});
     }
-    // Bishop moves (sliding diagonal)
-    for(const[dr,dc]of[[1,1],[1,-1],[-1,1],[-1,-1]])addSlide(dr,dc);
+    // Diagonal moves up to 3 squares
+    for(const[dr,dc]of[[1,1],[1,-1],[-1,1],[-1,-1]]){
+      let tr=r+dr,tc=c+dc;
+      for(let i=0;i<3;i++){
+        if(!inBounds(tr,tc))break;
+        const t=board[tr][tc];
+        if(!t){moves.push({r:tr,c:tc});}
+        else{if(t.color===enemy)moves.push({r:tr,c:tc});break;}
+        tr+=dr;tc+=dc;
+      }
+    }
   }
   if(type==='F'){
     // Moves like King (1 square any direction)
@@ -375,15 +384,15 @@ function applyMoveToBoard(board,from,to,special,ep,castling,vanguard){
   if(special==='castle-k'){
     const row=from.r;
     nb[row][5]=null;nb[row][9]=null;
-    nb[row][7]={...p};
-    nb[row][6]={type:'T',color:p.color,moved:true};
+    nb[row][8]={...p};
+    nb[row][7]={type:'T',color:p.color,moved:true};
     return{board:nb,ep:null,castling:{...castling,[p.color]:{kside:false,qside:false}}};
   }
   if(special==='castle-q'){
     const row=from.r;
     nb[row][5]=null;nb[row][0]=null;
-    nb[row][3]={...p};
-    nb[row][4]={type:'T',color:p.color,moved:true};
+    nb[row][2]={...p};
+    nb[row][3]={type:'T',color:p.color,moved:true};
     return{board:nb,ep:null,castling:{...castling,[p.color]:{kside:false,qside:false}}};
   }
 
@@ -566,13 +575,13 @@ function canFireTribunal(color){
   if(G.gameOver||G.turn!==color)return false;
   const enemyPh=G.phoenix[opp(color)];
   if(enemyPh.lives===3||enemyPh.lives===0||enemyPh.permanent)return false;
-  // need own pieces summing ≥7 (excluding King and Phoenix)
+  // need own pieces summing ≥8 (excluding King and Phoenix)
   let total=0;
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){
     const p=G.board[r][c];
     if(p&&p.color===color&&p.type!=='K'&&p.type!=='F')total+=PIECE_VALUE[p.type]||0;
   }
-  return total>=7;
+  return total>=8;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -600,8 +609,8 @@ function logMove(msg,special=false){
 //  PROMOTION DIALOG
 // ═══════════════════════════════════════════════════════
 function showPromoDialog(r,c,color,callback){
-  const opts=['D','T','L','P','C','S','F'];
-  const names={D:'Queen',T:'Rook',L:'Bishop',P:'Knight',C:'Crusader',S:'Spectre',F:'Phoenix'};
+  const opts=['D','T','L','P','C','S'];
+  const names={D:'Queen',T:'Rook',L:'Bishop',P:'Knight',C:'Paladin',S:'Spectre'};
   const box=document.getElementById('promo-btns');
   box.innerHTML='';
   for(const t of opts){
@@ -1044,8 +1053,8 @@ function showFireModal(){
 
   function updateTotal(){
     total=selected.reduce((s,x)=>s+(PIECE_VALUE[x.p.type]||0),0);
-    document.getElementById('fire-total').textContent=`Selected: ${total} pts (need ≥7)`;
-    document.getElementById('fire-confirm').disabled=total<7;
+    document.getElementById('fire-total').textContent=`Selected: ${total} pts (need ≥8)`;
+    document.getElementById('fire-confirm').disabled=total<8;
   }
 
   for(const{r,c,p} of pieces){
